@@ -1,0 +1,29 @@
+
+
+#include <iostream>
+#include <vector>
+
+
+
+namespace nnplusplus {
+
+double fun1 (double x) 
+{
+	return x;
+}
+
+class NeuralNet
+{
+public:
+	std::vector<double> weights;
+	std::vector<int> neure_num;
+
+
+
+	bool init_weights ();
+	std::vector<double> output (std::vector<double> x, std::vector<double>& output, const int layer);
+
+}
+
+
+}

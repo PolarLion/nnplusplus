@@ -1,8 +1,32 @@
 #include "NeuralNet.h"
+#include <string.h>
+#include <math.h>
 
 
 using namespace nnplusplus;
 
+
+ActiveFunction* activefunction_maker (const char *str)
+{
+	ActiveFunction* p = NULL;
+	printf ("str = %s\n", str);
+	std::cout << strcmp ("negation", "negation") << std::endl;
+	if (0 == strcmp ("negation", str)) {
+		p = new NegationFunction ();
+		if (NULL == p) {
+			printf ("can't allocate memory for Negation Function\n");
+			return NULL;
+		}
+	}
+	else {
+		p = new NullFunction ();
+		if (NULL == p) {
+			printf ("Can't allocate memory for null function\n");
+			return NULL;
+		}
+	}
+	return p;
+}
 
 
 NeuralNet::NeuralNet (int ln, ...) 
@@ -10,28 +34,44 @@ NeuralNet::NeuralNet (int ln, ...)
 {
 	va_list args;
 	va_start (args, ln);
-	while (ln--) 
-	{
+	for (int i = 0; i < layer_num; ++i) {
 		layer_size.push_back (va_arg (args, int));
+	}
+	for (int i = 0; i < layer_num - 1; ++i) {
+		active_function.push_back (activefunction_maker (va_arg (args, char*)));
 	}
 	va_end (args);
 	for (int i = 0; i < layer_size.size (); ++i) {
 		std::cout << layer_size [i] << " ";
 	}
-	printf ("\n");
+	std::cout << std::endl;
+	std::cout << "active function : " << active_function.size () << std::endl;
+	init_weights ();
+	init_basis ();
 }
 
 
 bool NeuralNet::init_weights ()
 {
  	int weight_num = 0;
+	weights.clear ();
 	for (int i = 0; i < layer_size.size () - 1; ++i) {
 		weight_num += layer_size [i] * layer_size [i+1];
 	}
-	std::cout << weight_num << std::endl;
+	std::cout << "weight number : " << weight_num << std::endl;
 	double w0 = 1.0 / weight_num;
 	for (long i = 0; i < weight_num; ++i) {
 		weights.push_back (w0);
+	}
+	std::cout << "weight size : " << weights.size () << std::endl;
+	return true;
+}
+
+
+bool NeuralNet::init_basis ()
+{
+	for (int i = 0; i < layer_num - 1; ++i) {
+		basis.push_back (1.0);
 	}
 	return true;
 }
@@ -39,31 +79,62 @@ bool NeuralNet::init_weights ()
 
 bool NeuralNet::propagation (const std::vector<double>& input, std::vector<double>& output, const int layer)
 {
+	output.clear ();
+	if (input.size () != layer_size [layer]) {
+		printf ("wrong input size");
+		return false;
+	}
  	if (layer >= layer_size.size () - 1 ) {
 		printf ("wrong layer number\n");
 		return false;
 	}
+	//std::cout << active_function.size () << std::endl;
 	int base = 0;
 	for (int i = 0; i < layer && i < layer_size.size () - 1; ++i) {
 		base += layer_size [i] * layer_size [i+1];
 	}
 	for (int i = 0; i < layer_size [layer+1]; ++i) {
 		double ne = 0;
-		for (int j = 0; j < input.size (); ++j) {
+		for (int j = 0; j < layer_size [layer]; ++j) {
 			ne += input [j] * weights [base + i * input.size () + j];
 		}
-		output.push_back (active_function [layer](ne));
+		ne += basis [layer];
+		output.push_back ((*active_function [layer])(ne));
 	}
  	return true;	
 }
 
 
-bool NeuralNet::output (const std::vector<double>& input, std::vector<double>& out)
+bool NeuralNet::output (const std::vector<double>& x, std::vector<double>& out)
 {
-	return true;
+	std::vector<double> tmp = x;
+	for (int i = 0; i < layer_num - 1; ++i) {
+		propagation (tmp, out, i);
+		tmp = out;
+	}
+ 	return true;
 }
 
 
+bool NeuralNet::sum_of_squares_error (const std::vector<double>& x, const std::vector<double>& t, double& error)
+{
+	if (t.size () != layer_size [layer_num-1]) {
+		printf ("wrong target output size\n");
+		return false;
+	}
+	std::vector<double> out;
+	output (x, out);
+	for (int i = 0; i < t.size (); ++i) {
+		error += pow (t[i] - out[i], 2);
+	}
+	error /= 2;
+	return true;
+}
+
+bool NeuralNet::train ()
+{
+	return true;
+}
 
 void NeuralNet::test ()
 {
@@ -80,11 +151,13 @@ void NeuralNet::test ()
 		cout << h1[i] << " ";
 	}
 	cout << endl;
+	vector<double> out;
+	output (x, out);
+	for (int i = 0; i < out.size (); ++i) {
+		cout << out[i] << " ";
+	}
+	cout << endl;
 }
-
-
-
-
 
 
 
