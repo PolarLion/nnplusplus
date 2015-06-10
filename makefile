@@ -1,5 +1,5 @@
 CC=g++
-CFLAGS=-c -O3 -Wall -Wno-sign-compare
+CFLAGS=-c -std=c++11 -O3 -Wall -Wno-sign-compare
 LDFLAGS=
 SOURCES = NeuralNet.cpp\
 	main.cpp

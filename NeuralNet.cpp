@@ -40,6 +40,8 @@ ActiveFunction* activefunction_maker (const char *str)
 
 NeuralNet::NeuralNet (int ln, ...) 
 	: layer_num (ln)
+	, epoch(10)
+	, learing_rate(0.5)
 {
 	va_list args;
 	va_start (args, ln);
@@ -140,8 +142,27 @@ bool NeuralNet::sum_of_squares_error (const std::vector<double>& x, const std::v
 	return true;
 }
 
-bool NeuralNet::train ()
+
+bool NeuralNet:load_training_set (const std::string& train_file, std::vector<std::pair<std::vector<double>, std::vector<double>>>) 
 {
+	return true;
+}
+
+
+bool NeuralNet::train_step (const std::vector<double>& x, const std::vector<double>& t)
+{
+	return true;
+}
+
+
+bool NeuralNet::train ()
+{	
+	std::vector<std::pair<std::vector<double>, std::vector<double>>> training_set;
+	for (int i = 0; i < epoch; ++i) {
+		for (int ii = 0; ii < training_set.size (); ++ii) {
+			train_step (training_set[ii].first, training_set[ii].second);
+		}
+	}
 	return true;
 }
 
