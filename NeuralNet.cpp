@@ -17,6 +17,15 @@ ActiveFunction* activefunction_maker (const char *str)
 			printf ("can't allocate memory for Negation Function\n");
 			return NULL;
 		}
+		printf ("negation\n");
+	}
+	else if (0 == strcmp ("logistic", str)) {
+		p = new LogisticSigmodFunction ();
+		if (NULL == p) {
+			printf ("Can't allocate memory for logistic function\n");
+			return NULL;
+		}
+		printf ("logistic\n");
 	}
 	else {
 		p = new NullFunction ();
