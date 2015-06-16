@@ -1,6 +1,8 @@
 #include "NeuralNet.h"
 #include <string.h>
 #include <math.h>
+#include <fstream>
+#include <stdio.h>
 
 
 using namespace nnplusplus;
@@ -17,7 +19,7 @@ ActiveFunction* activefunction_maker (const char *str)
 			printf ("can't allocate memory for Negation Function\n");
 			return NULL;
 		}
-		printf ("negation\n");
+		//printf ("negation\n");
 	}
 	else if (0 == strcmp ("logistic", str)) {
 		p = new LogisticSigmodFunction ();
@@ -25,7 +27,7 @@ ActiveFunction* activefunction_maker (const char *str)
 			printf ("Can't allocate memory for logistic function\n");
 			return NULL;
 		}
-		printf ("logistic\n");
+		//printf ("logistic\n");
 	}
 	else {
 		p = new NullFunction ();
@@ -53,9 +55,9 @@ NeuralNet::NeuralNet (int ln, ...)
 	}
 	va_end (args);
 	for (int i = 0; i < layer_size.size (); ++i) {
-		std::cout << layer_size [i] << " ";
+		//std::cout << layer_size [i] << " ";
 	}
-	std::cout << std::endl;
+	//std::cout << std::endl;
 	std::cout << "active function : " << active_function.size () << std::endl;
 	init_weights ();
 	init_basis ();
@@ -69,12 +71,12 @@ bool NeuralNet::init_weights ()
 	for (int i = 0; i < layer_size.size () - 1; ++i) {
 		weight_num += layer_size [i] * layer_size [i+1];
 	}
-	std::cout << "weight number : " << weight_num << std::endl;
+	//std::cout << "weight number : " << weight_num << std::endl;
 	double w0 = 1.0 / weight_num;
 	for (long i = 0; i < weight_num; ++i) {
 		weights.push_back (w0);
 	}
-	std::cout << "weight size : " << weights.size () << std::endl;
+	//std::cout << "weight size : " << weights.size () << std::endl;
 	return true;
 }
 
@@ -143,8 +145,23 @@ bool NeuralNet::sum_of_squares_error (const std::vector<double>& x, const std::v
 }
 
 
-bool NeuralNet:load_training_set (const std::string& train_file, std::vector<std::pair<std::vector<double>, std::vector<double>>>) 
+bool NeuralNet::load_training_set (const std::string& train_file, std::vector<std::pair<std::vector<double>, std::vector<double>>> training_set) 
 {
+	std::ifstream infile (train_file);
+	if (infile.fail ()) {
+		printf ("euralNet::load_training_set open file %s error", train_file.c_str ());
+		return false;
+	}
+	std::string line;
+	char* pend = NULL;
+	std::getline (infile, line);
+	training_size = strtol (line.c_str (), &pend, 10);
+	std::cout << "training size : " << training_size << std::endl;
+	input_num = strtol (pend, &pend, 10);
+	std::cout << "input : " << input_num << std::endl;
+	output_num = strtol (pend, NULL, 10);
+	std::cout << "output : " << output_num << std::endl;
+	infile.close ();
 	return true;
 }
 
@@ -169,6 +186,9 @@ bool NeuralNet::train ()
 void NeuralNet::test ()
 {
 	using namespace std;
+	std::vector<std::pair<std::vector<double>, std::vector<double>>> t;
+	load_training_set ("test/train.txt", t);
+	return;
 	vector<double> x;
 	for (int i = 0; i < 5; ++i) {
 		x.push_back (i/5.0);
@@ -186,7 +206,7 @@ void NeuralNet::test ()
 	for (int i = 0; i < out.size (); ++i) {
 		cout << out[i] << " ";
 	}
-	cout << endl;
+	cout << endl; 
 }
 
 
