@@ -3,6 +3,8 @@
 #include <math.h>
 #include <fstream>
 #include <stdio.h>
+#include <time.h>
+#include <stdlib.h>
 
 
 using namespace nnplusplus;
@@ -145,7 +147,7 @@ bool NeuralNet::sum_of_squares_error (const std::vector<double>& x, const std::v
 }
 
 
-bool NeuralNet::load_training_set (const std::string& train_file, std::vector<std::pair<std::vector<double>, std::vector<double>>> training_set) 
+bool NeuralNet::load_training_set (const std::string& train_file, std::vector<std::pair<std::vector<double>, std::vector<double>>>& training_set) 
 {
 	std::ifstream infile (train_file);
 	if (infile.fail ()) {
@@ -161,7 +163,39 @@ bool NeuralNet::load_training_set (const std::string& train_file, std::vector<st
 	std::cout << "input : " << input_num << std::endl;
 	output_num = strtol (pend, NULL, 10);
 	std::cout << "output : " << output_num << std::endl;
+	while (training_set.size () < training_size && !infile.eof ()) {
+		std::vector <double> in;
+		std::vector <double> out;
+		std::getline (infile, line);
+		in.push_back (strtod (line.c_str (), &pend));
+		for (int i = 1; i < input_num - 1; ++i) {
+			in.push_back (strtod (pend, &pend));
+		}
+		in.push_back (strtod (pend, NULL));
+		std::getline (infile, line);
+		out.push_back (strtod (line.c_str (), &pend));
+		for (int i = 1; i < output_num - 1; ++i) {
+			out.push_back (strtod (pend, &pend));
+		}
+		out.push_back (strtod (pend, NULL));
+		training_set.push_back (std::pair<std::vector<double>, std::vector<double>>(in, out));
+	}
+	if (training_set.size () < training_size) {
+		printf ("NeuralNet::load_training_set less of training set\n");
+		return false;
+	}
 	infile.close ();
+
+	for (int i = 0; i < training_set.size (); ++i) {
+		for (int ii = 0 ; ii < training_set[i].first.size (); ++ii) {
+			std::cout << training_set[i].first[ii] << " ";
+		}
+		std::cout << " : ";
+		for (int ii = 0 ; ii < training_set[i].second.size (); ++ii) {
+			std::cout << training_set[i].second[ii] << " ";
+		}
+		std::cout << std::endl;
+	}
 	return true;
 }
 
@@ -172,13 +206,14 @@ bool NeuralNet::train_step (const std::vector<double>& x, const std::vector<doub
 }
 
 
-bool NeuralNet::train ()
+bool NeuralNet::train (const std::string& train_file)
 {	
 	std::vector<std::pair<std::vector<double>, std::vector<double>>> training_set;
+	load_training_set (train_file, training_set);
 	for (int i = 0; i < epoch; ++i) {
-		for (int ii = 0; ii < training_set.size (); ++ii) {
-			train_step (training_set[ii].first, training_set[ii].second);
-		}
+		//for (int ii = 0; ii < training_set.size (); ++ii) {
+			//train_step (training_set[ii].first, training_set[ii].second);
+		//}
 	}
 	return true;
 }
@@ -186,8 +221,9 @@ bool NeuralNet::train ()
 void NeuralNet::test ()
 {
 	using namespace std;
-	std::vector<std::pair<std::vector<double>, std::vector<double>>> t;
-	load_training_set ("test/train.txt", t);
+	//std::vector<std::pair<std::vector<double>, std::vector<double>>> t;
+	//load_training_set ("test/train.txt", t);
+	train ("test/train.txt");
 	return;
 	vector<double> x;
 	for (int i = 0; i < 5; ++i) {
