@@ -1,10 +1,9 @@
 #include "NeuralNet.h"
+#include "auxiliary.h"
 #include <string.h>
 #include <math.h>
 #include <fstream>
 #include <stdio.h>
-#include <time.h>
-#include <stdlib.h>
 
 
 using namespace nnplusplus;
@@ -44,7 +43,7 @@ ActiveFunction* activefunction_maker (const char *str)
 
 NeuralNet::NeuralNet (int ln, ...) 
 	: layer_num (ln)
-	, epoch(10)
+	, epoch(1)
 	, learing_rate(0.5)
 {
 	va_list args;
@@ -186,22 +185,20 @@ bool NeuralNet::load_training_set (const std::string& train_file, std::vector<st
 	}
 	infile.close ();
 
-	for (int i = 0; i < training_set.size (); ++i) {
-		for (int ii = 0 ; ii < training_set[i].first.size (); ++ii) {
-			std::cout << training_set[i].first[ii] << " ";
-		}
-		std::cout << " : ";
-		for (int ii = 0 ; ii < training_set[i].second.size (); ++ii) {
-			std::cout << training_set[i].second[ii] << " ";
-		}
-		std::cout << std::endl;
-	}
 	return true;
 }
 
 
 bool NeuralNet::train_step (const std::vector<double>& x, const std::vector<double>& t)
 {
+	for (int ii = 0 ; ii < x.size (); ++ii) {
+		std::cout << x[ii] << " ";
+	}
+	std::cout << " : ";
+	for (int ii = 0 ; ii < t.size (); ++ii) {
+		std::cout << t[ii] << " ";
+	}
+	std::cout << std::endl;
 	return true;
 }
 
@@ -211,12 +208,15 @@ bool NeuralNet::train (const std::string& train_file)
 	std::vector<std::pair<std::vector<double>, std::vector<double>>> training_set;
 	load_training_set (train_file, training_set);
 	for (int i = 0; i < epoch; ++i) {
-		//for (int ii = 0; ii < training_set.size (); ++ii) {
-			//train_step (training_set[ii].first, training_set[ii].second);
-		//}
+		shuffle (training_set);
+		//shuffle (training_set);
+		for (int ii = 0; ii < training_set.size (); ++ii) {
+			train_step (training_set[ii].first, training_set[ii].second);	
+		}
 	}
 	return true;
 }
+
 
 void NeuralNet::test ()
 {
