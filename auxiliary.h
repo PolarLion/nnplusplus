@@ -26,11 +26,10 @@ void swap (std::vector<A>& a, int index1, int index2)
 template <typename T>
 void shuffle (std::vector<T>& a)
 {
-	//set_seed (time (NULL));
-	//std::chrono::time_point<std::chrono::system_clock> start = std::chrono::system_clock::now();
-	//std::chrono::duration<unsigned int> now = start;
-	//std::chrono::system_clock::time
-	//set_seed (start.count ());
+	std::chrono::steady_clock::time_point start = std::chrono::steady_clock::now();
+	std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
+
+	set_seed (std::chrono::duration_cast<std::chrono::nanoseconds> (end - start).count ());
 	int count = 0;
 	for (int i = 0; i < a.size () - 1; ++i) {
 		//printf ("%d ", rand_int (0, 10));
