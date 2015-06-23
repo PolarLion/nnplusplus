@@ -67,7 +67,7 @@ NeuralNet::NeuralNet (int ln, ...)
 bool NeuralNet::init_bias ()
 {
 	for (int i = 0; i < layer_num-1; ++i) {
-		bias.push_back (1.0);
+		bias.push_back (-1.0);
 	}
 	std::cout << "bias size : " << bias.size () << std::endl;
 	return true;
@@ -81,7 +81,7 @@ bool NeuralNet::init_weights ()
 	for (int i = 0; i < layer_size.size () - 1; ++i) {
 		weight_num += (layer_size [i] + 1 ) * layer_size [i+1];
 	}
-	double w0 = 0.01;//1.0 / weight_num;
+	double w0 = 0.1;//1.0 / weight_num;
 	for (long i = 0; i < weight_num; ++i) {
 		weights.push_back (w0);
 	}
@@ -184,21 +184,64 @@ bool NeuralNet::output (const std::vector<double>& x, std::vector<double>& out)
 			double ne = 0;
 			for (int ii = 0; ii < layer_size [layer]; ++ii) {
 				//std::cout << " out index :" << o_base + ii ;
-				//std::cout << "      weight index " << w_base + i * (1+layer_size [layer+1]) + ii;
-				ne += out [o_base + ii] * weights [w_base + i * (1+layer_size [layer+1]) + ii]; 
+				//std::cout << "      weight index " << w_base + i * (1+layer_size [layer]) + ii;
+				ne += out [o_base + ii] * weights [w_base + i * (1+layer_size [layer]) + ii]; 
 			  //std::cout << std::endl;
 			}
-			//std::cout << "bias weights : " << w_base + i * (1+layer_size [layer+1]) + layer_size [layer] << std::endl;
-			ne += bias [layer] * weights [w_base + i * (1+layer_size [layer+1]) + layer_size [layer]];
+			//std::cout << "bias weights : " << w_base + i * (1+layer_size [layer]) + layer_size [layer] << std::endl;
+			ne += bias [layer] * weights [w_base + i * (1+layer_size [layer]) + layer_size [layer]];
 			out.push_back ((*active_function [layer])(ne));
 		}
 	}
- 	return true;
+ 	return true; 
 }
 
 
 bool NeuralNet::compute_delta (const std::vector<double>& t, const std::vector<double>& out, std::vector<double>& delta)
 {
+	//输出层
+	//std::cout << "layer size " << layer_size [layer_num-1] << std::endl;
+	for (int i = 0; i < layer_size [layer_num-1]; ++i) {
+	 	delta.push_back (0.0);
+		double o = out [out.size () - layer_size [layer_num-1] + i];
+		//std::cout << "out " << out.size () - layer_size [layer_num-1] + i << " " <<  o << std::endl;
+		delta [i] = (t [i] - o);
+		//std::cout << "delta " << delta [i] << std::endl;
+		if ("logisticsigmod" == active_function [active_function.size () - 1]->name ()) {
+			//std::cout << "sigmod\n";
+	 		delta [i] *= o * (1 - o);	
+		}
+	}
+
+	//隐藏层
+	int o_base = out.size () - layer_size [layer_num-1];
+	int w_base = weights.size () - layer_size [layer_num-1] * (1+layer_size [layer_num-2]);
+	for (int layer = layer_num - 2; layer > 0; --layer) {
+		o_base -= layer_size [layer];
+		for (int i = 0; i < layer_size [layer]; ++i) {
+			delta.push_back (0.0);
+			//std::cout << o_base + i<< std::endl;
+			double o = out [o_base + i];
+			//std::cout << "out " << o_base.size () - 2 + i << " " <<  o << std::endl;
+			int delta_index = layer_size [layer_num - 1] + i;
+			//std::cout << "di "  << delta_index << std::endl;
+			//delta[delta_index] = 0.0;
+			for (int ii = 0; ii < layer_size [layer_num - 1]; ++ii) {
+				//std::cout << "- " << w_base + i * layer_size [layer_num-1] + ii  << std::endl;
+				//std::cout << ii <<std::endl;
+				delta [delta_index] += weights [w_base + i * layer_size [layer_num-1] + ii] * delta [ii];
+			}
+			if ("logisticsigmod" == active_function [active_function.size () - 1]->name ()) {
+				delta [delta_index] *= o * (1 - o); 
+			}
+			//std::cout << " delta " << delta_index << " " << delta[delta_index] << std::endl;
+		}
+	}
+	std::cout << "delta : ";
+	for (int i = 0; i < delta.size (); ++i) {
+		std::cout << delta [i] << " ";
+	}
+	std::cout << std::endl;
 
 	return true;
 }
@@ -210,71 +253,46 @@ bool NeuralNet::update_weights (const std::vector<double>& t, const std::vector<
 		printf ("NeuralNet::compute_local_gradient () : error target vector\n");
 		return false;
 	}
-	int ob = 0, wb = 0;
-	std::vector<int> o_base;
-	std::vector<int> w_base;
-	for (int i = 0; i < layer_num - 1; ++i) {
-		o_base.push_back (ob);
-		ob += layer_size [i];
-		w_base.push_back (wb);
-		wb += layer_size [i] * layer_size [i+1];
-	}
-	//std::cout << "ok\n";
 	std::vector<double> delta;
+	compute_delta (t, out, delta);
+	//return false;
+	
+	int w_base = weights.size () - layer_size [layer_num - 1] * (1+layer_size [layer_num - 2]);
+	int o_base = out.size () - layer_size [layer_num - 1] - layer_size [layer_num - 2];
+	int d_base = 0;
 	//输出层
-	for (int i = 0; i < layer_size [layer_size.size () - 1]; ++i) {
-		delta.push_back (0.0);
-		double o = out [o_base [o_base.size () - 1] + i];
-		//std::cout << "out " << o_base [o_base.size () - 1] << " " <<  o << std::endl;
-		delta[i] = (t [i] - o);
-		//std::cout << "delta " << delta << std::endl;
-		if ("logisticsigmod" == active_function [active_function.size () - 1]->name ()) {
-			//std::cout << "sigmod\n";
-			delta [i] *= o * (1 - o);	
+	for (int i = 0; i < layer_size [layer_num - 1]; ++i) {
+		for (int ii = 0; ii < layer_size [layer_num - 2]; ++ii) {
+			//std::cout << " wi " << w_base + i * (1 + layer_size [layer_num - 2]) + ii << std::endl;
+			//std::cout << " oi " << o_base + ii << std::endl;
+			//std::cout << 
+			weights [w_base + i * (1 + layer_size [layer_num - 3]) + ii] += learing_rate * delta [i] * out [o_base + ii];
 		}
-	}
-	//隐藏层
-	for (int i = 0; i < layer_size [layer_size.size () - 2]; ++i) {
-		delta.push_back (0.0);
-		double o = out [o_base [o_base.size () -1] + i];
-		//std::cout << "out " << o_base.size () - 2 + i << " " <<  o << std::endl;
-		int delta_index = layer_size [layer_size.size () - 1] + i;
-		//std::cout << "d i "  << delta_index << std::endl;
-		delta[delta_index] = 0.0;
-		for (int ii = 0; ii < layer_size [layer_size.size () - 1]; ++ii) {
-			//std::cout << " jfjfj : " <<     ii + i * layer_size [layer_size.size () - 1] + w_base [w_base.size () - 1]<<  " " << weights [ii + i * layer_size [layer_size.size () - 1] + w_base [w_base.size () - 1]]	<< std::endl;
-			//std::cout << delta [ii] <<std::endl;
-			delta [delta_index] += weights [ii + i * layer_size [layer_size.size () - 1] + w_base [w_base.size () - 1]] * delta [ii];
-		}
-		if ("logisticsigmod" == active_function [active_function.size () - 1]->name ()) {
-			delta [delta_index] *= o * (1 - o); 
-		}
-		//std::cout << " delta " << delta_index << " " << delta[delta_index] << std::endl;
+		//bias
+		//std::cout << " wi " << w_base + i * (1+layer_size [layer_num - 2]) + layer_size [layer_num - 2] << std::endl;
+		//std::cout << " bi " << layer_num-2 << std::endl;
+		weights [w_base + i * (1+layer_size [layer_num - 1]) + layer_size [layer_num - 2]] += learing_rate * delta [i] * bias [layer_num-2];
 	}
 
-
-	for (int i = 0; i < layer_size [layer_size.size () - 1]; ++i) {
-		for (int ii = 0; ii < layer_size [layer_size.size () - 2]; ++ii) {
-			//std::cout << w_base [w_base.size () -1] << " ------ " << w_base [w_base.size () -1] + i * layer_size [layer_size.size () - 2] + ii << "\n";
-			//std::cout <<  " ++++++++++ " << o_base [layer_num - 2] + ii << std::endl;
-			//std::cout << ii << std::endl;
-			//std::cout << " d " << learing_rate * delta[i] * out [o_base [layer_num - 2] + ii] << std::endl;
-			//std::cout << " d " << out [o_base [layer_num - 2] + ii] << std::endl;
-			weights [w_base [w_base.size () - 1] + i * layer_size [layer_size.size () - 2] + ii] += learing_rate * delta[i] * out [o_base [layer_num - 2] + ii];
-		}
-	}
-	for (int i = 0; i < layer_size [layer_size.size () - 2]; ++i) {
-		int delta_index = layer_size [layer_size.size () - 1] + i;
-		for (int ii = 0; ii < layer_size [layer_size.size () - 2]; ++ii) {
-			//std::cout << w_base [w_base.size () -2] << " --- " << w_base [w_base.size () -2] + i * layer_size [layer_size.size () - 2] + ii << "\n";
-			//std::cout <<  " +++ " << o_base [layer_num - 3] + ii << std::endl;
-			//std::cout << " d " << out [o_base [layer_num - 3] + ii] << std::endl;
-			//std::cout << " d " << delta[delta_index] << std::endl;
-			weights [w_base [w_base.size () - 2] + i * layer_size [layer_size.size () - 2] + ii] += learing_rate * delta[delta_index] * out [o_base [layer_num - 3] + ii];
+	//隐层
+	for (int layer = layer_num - 2; layer > 0; --layer) {
+		w_base -= layer_size [layer] * (1 + layer_size [layer - 1]);
+		o_base -= layer_size [layer - 1];
+		d_base += layer_size [layer + 1];
+		for (int i = 0; i < layer_size [layer]; ++i) {
+			for (int ii = 0; ii < layer_size [layer - 1]; ++ii) {
+				//std::cout << "wi " << w_base + i * (1 + layer_size [layer-1]) + ii << std::endl;
+				//std::cout << "oi " << o_base + ii << std::endl;
+				//std::cout << "di " << d_base + i << std::endl;
+				weights [w_base + i * (1 + layer_size [layer-1]) + ii] += learing_rate * delta [d_base + i] * out [o_base + ii];
+			}
+			//std::cout << w_base + i * (1 + layer_size [layer-1]) + layer_size [layer - 1] << std::endl;
+			//std::cout << bias [layer-1] << std::endl;
+			weights [w_base + i * (1 + layer_size [layer-1]) + layer_size [layer - 1]] += learing_rate * delta [d_base + i] * bias [layer-1];
 		}
 	}
 	for (int i = 0; i < weights.size (); ++i) {
-		std::cout << weights [i] << " ";
+		//std::cout << weights [i] << " ";
 	}
 	std::cout<<std::endl;
 	return true;
@@ -299,14 +317,14 @@ bool NeuralNet::train_step (double& e, const std::vector<double>& x, const std::
 	for (int ii = 0; ii < out.size (); ++ii) {
 		std::cout << out[ii] << " ";
 	}	
-	//std::cout << std::endl;
+	std::cout << std::endl;
 	//计算输出层误差
 	double error = 0;
 	sum_of_squares_error (out, t, error);
 	e += error;
-	std::cout << " : " <<  e << std::endl;
+	std::cout << "error : " <<  error << std::endl;
 	//计算局部梯度并修正权值
-	//update_weights (t, out);	
+	update_weights (t, out);	
 	return true;
 }
 
