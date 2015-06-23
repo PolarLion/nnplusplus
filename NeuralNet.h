@@ -26,19 +26,20 @@ public:
 	std::vector<int> layer_size;
 	//every layer's active function
 	std::vector<ActiveFunction*> active_function;
-	//every layer's basis
-	std::vector<double> basis;
+	//every layer's bias
+	std::vector<double> bias;
 
 	NeuralNet () : layer_num (0), epoch(0), learing_rate(0) {}
 	NeuralNet (int layer_num, ...);
 
 	bool init_weights ();
-	bool init_basis ();
+	bool init_bias ();
 	bool propagation (const std::vector<double>& x, std::vector<double>& output, const int layer);
 	bool output (const std::vector<double>& input, std::vector<double>& out);
 	bool sum_of_squares_error (const std::vector<double>& out, const std::vector<double>& t, double& error);
 	bool load_training_set (const std::string& train_file, std::vector<std::pair<std::vector<double>, std::vector<double>>>& training_set);
 	bool train_step (double& e, const std::vector<double>& x, const std::vector<double>& t);
+	bool compute_delta (const std::vector<double>& t, const std::vector<double>& out, std::vector<double>& delta);
 	bool update_weights (const std::vector<double>& t, const std::vector<double>& out);
 	bool train (const std::string& train_file);
 	void test ();

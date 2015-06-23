@@ -43,8 +43,8 @@ ActiveFunction* activefunction_maker (const char *str)
 
 NeuralNet::NeuralNet (int ln, ...) 
 	: layer_num (ln)
-	, epoch(100)
-	, learing_rate(10)
+	, epoch(1)
+	, learing_rate(1)
 {
 	va_list args;
 	va_start (args, ln);
@@ -61,35 +61,33 @@ NeuralNet::NeuralNet (int ln, ...)
 	//std::cout << std::endl;
 	std::cout << "active function size : " << active_function.size () << std::endl;
 	init_weights ();
-	init_basis ();
+	init_bias ();
 }
 
+bool NeuralNet::init_bias ()
+{
+	for (int i = 0; i < layer_num-1; ++i) {
+		bias.push_back (1.0);
+	}
+	std::cout << "bias size : " << bias.size () << std::endl;
+	return true;
+}
 
 bool NeuralNet::init_weights ()
 {
  	int weight_num = 0;
 	weights.clear ();
+	//每一层加上一个bias的权重
 	for (int i = 0; i < layer_size.size () - 1; ++i) {
-		weight_num += layer_size [i] * layer_size [i+1];
+		weight_num += (layer_size [i] + 1 ) * layer_size [i+1];
 	}
-	//std::cout << "weight number : " << weight_num << std::endl;
 	double w0 = 0.01;//1.0 / weight_num;
 	for (long i = 0; i < weight_num; ++i) {
 		weights.push_back (w0);
 	}
-	//std::cout << "weight size : " << weights.size () << std::endl;
+	std::cout << "weight size : " << weights.size () << std::endl;
 	return true;
 }
-
-
-bool NeuralNet::init_basis ()
-{
-	for (int i = 0; i < layer_num - 1; ++i) {
-		basis.push_back (0);
-	}
-	return true;
-}
-
 
 bool NeuralNet::load_training_set (const std::string& train_file, std::vector<std::pair<std::vector<double>, std::vector<double>>>& training_set) 
 {
@@ -154,7 +152,6 @@ bool NeuralNet::load_training_set (const std::string& train_file, std::vector<st
 	return true;
 }
 
-
 bool NeuralNet::sum_of_squares_error (const std::vector<double>& out, const std::vector<double>& t, double& error)
 {
 	//std::cout << " XXXXXXXXXXX " << t.size () << " " << layer_size [layer_num-1] << std::endl;
@@ -172,34 +169,6 @@ bool NeuralNet::sum_of_squares_error (const std::vector<double>& out, const std:
 }
 
 
-bool NeuralNet::propagation (const std::vector<double>& input, std::vector<double>& output, const int layer)
-{
-	if (input.size () != layer_size [layer]) { 
-		std::cout << input.size () << " " << layer_size [layer] << std::endl; 
-		printf ("NeuralNet::propagation() : wrong input size\n");
-		return false;
-	}
- 	if (layer >= layer_size.size () - 1 ) {
-		printf ("NeuralNet::propagation () : wrong layer number\n");
-		return false;
-	}
-	//std::cout << active_function.size () << std::endl;
-	int base = 0;
-	for (int i = 0; i < layer && i < layer_size.size () - 1; ++i) {
-		base += layer_size [i] * layer_size [i+1];
-	}
-	for (int i = 0; i < layer_size [layer+1]; ++i) {
-		double ne = 0;
-		for (int j = 0; j < layer_size [layer]; ++j) {
-			ne += input [j] * weights [base + i * input.size () + j];
-		}
-		ne += basis [layer];
-		output.push_back ((*active_function [layer])(ne));
-	}
- 	return true;	
-}
-
-
 bool NeuralNet::output (const std::vector<double>& x, std::vector<double>& out)
 {
 	out.clear (); 
@@ -207,33 +176,31 @@ bool NeuralNet::output (const std::vector<double>& x, std::vector<double>& out)
 	int w_base = 0;
 	int o_base = 0;
 	for (int layer = 0; layer < layer_num - 1; ++layer) {
-		//if (!propagation (tmp, out, i)) {
-		//	printf ("NeuralNet::output() : propagation error\n");
-		//}
-		//tmp = out;
 		if (layer > 0) {
-			w_base += layer_size [layer-1] * layer_size [layer];
+			w_base += (layer_size [layer-1] + 1) * layer_size [layer];
 			o_base += layer_size [layer-1];
 		}
 		for (int i = 0; i < layer_size [layer+1]; ++i) {
 			double ne = 0;
-			if (layer < 1) {
-				for (int ii = 0; ii < layer_size [layer]; ++ii) {
-					ne +=  x[ii] * weights [i * x.size () + ii];
-				}
+			for (int ii = 0; ii < layer_size [layer]; ++ii) {
+				//std::cout << " out index :" << o_base + ii ;
+				//std::cout << "      weight index " << w_base + i * (1+layer_size [layer+1]) + ii;
+				ne += out [o_base + ii] * weights [w_base + i * (1+layer_size [layer+1]) + ii]; 
+			  //std::cout << std::endl;
 			}
-			else {
-				for (int ii = 0; ii < layer_size [layer]; ++ii) {
-					//std::cout << " == " << o_base + ii << std::endl;
-					//std::cout << " === " << w_base + i * layer_size [layer-1] + ii << std::endl;
-					ne +=  out[o_base + ii] * weights [w_base + i * layer_size [layer-1] + ii];
-				}
-			}
-			ne += basis [layer];
+			//std::cout << "bias weights : " << w_base + i * (1+layer_size [layer+1]) + layer_size [layer] << std::endl;
+			ne += bias [layer] * weights [w_base + i * (1+layer_size [layer+1]) + layer_size [layer]];
 			out.push_back ((*active_function [layer])(ne));
 		}
 	}
  	return true;
+}
+
+
+bool NeuralNet::compute_delta (const std::vector<double>& t, const std::vector<double>& out, std::vector<double>& delta)
+{
+
+	return true;
 }
 
 
@@ -339,7 +306,7 @@ bool NeuralNet::train_step (double& e, const std::vector<double>& x, const std::
 	e += error;
 	std::cout << " : " <<  e << std::endl;
 	//计算局部梯度并修正权值
-	update_weights (t, out);	
+	//update_weights (t, out);	
 	return true;
 }
 
@@ -355,9 +322,9 @@ bool NeuralNet::train (const std::string& train_file)
 		for (int ii = 0; ii < training_set.size (); ++ii) {
 			train_step (e, training_set[ii].first, training_set[ii].second);	
 		}
-		printf("NeuralNet::train () : error = %f\n", e);
+	 	printf("NeuralNet::train () : error = %f\n", e);
 	}
-	return true;
+	 return true;
 }
 
 
@@ -392,3 +359,31 @@ void NeuralNet::test ()
 
 
 
+/*
+bool NeuralNet::propagation (const std::vector<double>& input, std::vector<double>& output, const int layer)
+{
+	if (input.size () != layer_size [layer]) { 
+		std::cout << input.size () << " " << layer_size [layer] << std::endl; 
+		printf ("NeuralNet::propagation() : wrong input size\n");
+		return false;
+	}
+ 	if (layer >= layer_size.size () - 1 ) {
+		printf ("NeuralNet::propagation () : wrong layer number\n");
+		return false;
+	}
+	//std::cout << active_function.size () << std::endl;
+	int base = 0;
+	for (int i = 0; i < layer && i < layer_size.size () - 1; ++i) {
+		base += layer_size [i] * layer_size [i+1];
+	}
+	for (int i = 0; i < layer_size [layer+1]; ++i) {
+		double ne = 0;
+		for (int j = 0; j < layer_size [layer]; ++j) {
+			ne += input [j] * weights [base + i * input.size () + j];
+		}
+		//ne += basis [layer];
+		output.push_back ((*active_function [layer])(ne));
+	}
+ 	return true;	
+}
+*/
