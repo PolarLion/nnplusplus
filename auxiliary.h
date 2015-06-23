@@ -17,7 +17,7 @@ void set_seed (unsigned int seed);
 template <typename A>
 void swap (std::vector<A>& a, int index1, int index2)
 { 
-	std::cout << index1 << " " << index2 << std::endl; 
+	//std::cout << index1 << " " << index2 << std::endl; 
 	A tmp = a [index1];
 	a [index1] = a [index2];
 	a [index2] = tmp;
