@@ -12,9 +12,9 @@ namespace nnplusplus {
 class NeuralNet
 {
 private:
-	const int layer_num;
 	const int epoch;
 	const int learing_rate;
+	const int layer_num;
 
 	double training_size;
 	int input_num;
@@ -29,8 +29,8 @@ public:
 	//every layer's bias
 	std::vector<double> bias;
 
-	NeuralNet () : layer_num (0), epoch(0), learing_rate(0) {}
-	NeuralNet (int layer_num, ...);
+	NeuralNet () :  epoch(0), learing_rate(0), layer_num (0) {}
+	NeuralNet (int epoch, int learingrate, int layer_num, ...);
 
 	bool init_weights ();
 	bool init_bias ();
@@ -42,6 +42,7 @@ public:
 	bool compute_delta (const std::vector<double>& t, const std::vector<double>& out, std::vector<double>& delta);
 	bool update_weights (const std::vector<double>& t, const std::vector<double>& out);
 	bool train (const std::string& train_file);
+	bool save (const std::string& model_file);
 	void test ();
 };
 
