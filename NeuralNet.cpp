@@ -354,7 +354,7 @@ bool NeuralNet::train (const std::string& train_file)
 			train_step (e, training_set[ii].first, training_set[ii].second);	
 		}
 	 	printf("NeuralNet::train () : error = %f\n\n", e);
-		if (e < 0.01) {
+		if (e < 0.001) {
 			break;
 		}
 	}
@@ -369,28 +369,107 @@ bool NeuralNet::save (const std::string& model_file)
 		printf ("NeuralNet::save : open file error %s/n", model_file.c_str ());
 		return false;
 	}
-	outfile << "layers num : " << layer_num << std::endl;
+	//outfile << "layers num " << std::endl;
+	outfile << layer_num << std::endl;
+	//outfile << "layers size" << std::endl;
 	for (int i = 0; i < layer_size.size (); ++i) {
 		outfile << layer_size [i] << " ";
 	}
 	outfile << std::endl;
+	//outfile << "active functions " << std::endl;
 	for (int i = 0; i < active_function.size (); ++i) {
 		outfile << active_function [i]->name () << " ";
 	}
 	outfile << std::endl;
 
+	//outfile << "biaes " << std::endl;
 	for (int i = 0; i< bias.size (); ++i) {
 		outfile << bias [i] << " ";
 	}
 	outfile << std::endl;
 
+	//outfile << "weights " << std::endl;
+	outfile << weights.size () << std::endl;
 	for (int i = 0; i < weights.size (); ++i) {
 		outfile << weights [i] << " ";
 	}
 	outfile << std::endl;
 
+	 return true;
+}
+
+bool NeuralNet::clear ()
+{
+	layer_num = 0;
+	input_num = 0;
+	output_num = 0;
+	weights.clear ();
+	layer_size.clear ();
+	bias.clear ();
+	for (int  i = 0; i < active_function.size (); ++i) {
+		if (NULL != active_function [i]) {
+			delete active_function [i];
+		}
+	}
+	active_function.clear ();
 	return true;
 }
+
+bool NeuralNet::load (const std::string& model_file)
+{
+	clear ();
+	std::ifstream infile (model_file);
+	if (infile.fail ()) {
+		printf ("NeuralNet::load () : open file %s\n", model_file.c_str ());
+		return false;
+	}
+	std::string comment_line;
+	//std::getline (infile, comment_line);
+	//std::cout << comment_line << std::endl;
+	infile >> layer_num;
+	std::cout << "layer number " << layer_num << std::endl;
+	//std::getline (infile, comment_line);
+	//std::cout << comment_line << std::endl;
+	for (int i = 0; i < layer_num; ++i) {
+		int n = 0;
+		infile >> n;
+		layer_size.push_back (n);
+		std::cout << "layer size " << n << std::endl;
+	}
+	input_num = layer_size [0];
+	input_num = layer_size [layer_num-1];
+	//std::getline (infile, comment_line);
+	//std::cout << comment_line << std::endl;
+	std::string fun_name;
+	for (int i = 0; i < layer_num-1; ++i) {
+		infile >> fun_name;
+		ActiveFunction *p = NULL;
+		if ("logisticsigmod" == fun_name) {
+			p = new LogisticSigmodFunction ();
+		}
+		active_function.push_back (p);
+	}
+	//std::getline (infile, comment_line);
+	//std::cout << comment_line << std::endl;
+	for (int i = 0; i < layer_num - 1; ++i) {
+		double n = 0;
+		infile >> n;
+		bias.push_back (n);
+	}
+	//std::getline (infile, comment_line);
+	//std::cout << comment_line << std::endl;
+	int weights_num = 0;
+	infile >> weights_num;
+	for (int i = 0; i < weights_num; ++i) {
+		double n = 0;
+		infile >> n;
+		weights.push_back (n);
+		std::cout << "weight " << weights [i] << std::endl;
+	}
+
+	return true;
+}
+
 
 void NeuralNet::test ()
 {
@@ -399,6 +478,7 @@ void NeuralNet::test ()
 	//load_training_set ("test/train.txt", t);
 	train ("test/train.txt");
 	save ("test/model.txt");
+	load ("test/model.txt");
 	return;
 
 

@@ -21,18 +21,16 @@ int main (int argc, char** argv)
 		learning_rate = strtod (argv[2], NULL);
 	}
 	NeuralNet n (epoch, learning_rate, 3, 2, 2, 1, "logistic", "logistic");
-	n.test ();
+	//n.test ();
+	n.load ("test/model.txt");
+	std::vector <double> x(2);
+	std::vector <double> out;
+	x [0] = 1;
+	x [1] = 0;
+	n.output (x, out);
+	for (int i = 0; i < out.size (); ++i) {
+		std::cout << "out : " << out [i] << std::endl;
+	}
 	return 0;
 
-	vector<int> x;
-	for (int i = 0; i < 10; ++i) {
-		x.push_back (i);
-		cout << rand_double (0, 2) << endl;
-	}
-	shuffle (x);
-	for (int i = 0; i < x.size (); ++i) {
-		cout << x[i] << " ";
-	}
-	cout << endl;
-	return 0;
 }

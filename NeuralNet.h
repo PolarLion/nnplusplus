@@ -14,7 +14,7 @@ class NeuralNet
 private:
 	const int epoch;
 	const int learing_rate;
-	const int layer_num;
+	int layer_num;
 
 	double training_size;
 	int input_num;
@@ -43,6 +43,8 @@ public:
 	bool update_weights (const std::vector<double>& t, const std::vector<double>& out);
 	bool train (const std::string& train_file);
 	bool save (const std::string& model_file);
+	bool clear ();
+	bool load (const std::string& model_file);
 	void test ();
 };
 
