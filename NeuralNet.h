@@ -13,12 +13,13 @@ class NeuralNet
 {
 private:
 	const int epoch;
-	const int learing_rate;
+	double learing_rate;
 	int layer_num;
 
-	double training_size;
+	int training_size;
 	int input_num;
 	int output_num;
+	ActiveFunctionMaker activefunction_maker;
 public:
 	//all weights 
 	std::vector<double> weights;
@@ -30,7 +31,8 @@ public:
 	std::vector<double> bias;
 
 	NeuralNet () :  epoch(0), learing_rate(0), layer_num (0) {}
-	NeuralNet (int epoch, int learingrate, int layer_num, ...);
+	NeuralNet (const std::string& model_filename);
+	NeuralNet (int epoch, double learingrate, int layer_num, ...);
 
 	bool init_weights ();
 	bool init_bias ();

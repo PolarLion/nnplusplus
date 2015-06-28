@@ -9,39 +9,13 @@
 using namespace nnplusplus;
 
 
-ActiveFunction* activefunction_maker (const char *str)
+NeuralNet::NeuralNet (const std::string& model_filename)
 {
-	ActiveFunction* p = NULL;
-	printf ("str = %s\n", str);
-	//std::cout << strcmp ("negation", "negation") << std::endl;
-	if (0 == strcmp ("tanh", str)) {
-		p = new TanhFunction ();
-		if (NULL == p) {
-			printf ("can't allocate memory for tanh Function\n");
-			return NULL;
-		}
-		//printf ("negation\n");
-	}
-	else if (0 == strcmp ("logistic", str)) {
-		p = new LogisticSigmodFunction ();
-		if (NULL == p) {
-			printf ("Can't allocate memory for logistic function\n");
-			return NULL;
-		}
-		//printf ("logistic\n");
-	}
-	else {
-		p = new NullFunction ();
-		if (NULL == p) {
-			printf ("Can't allocate memory for null function\n");
-			return NULL;
-		}
-	}
-	return p;
+	load (model_filename);
 }
 
 
-NeuralNet::NeuralNet (int epoch_num, int learningrate, int ln, ...) 
+NeuralNet::NeuralNet (int epoch_num, double learningrate, int ln, ...) 
 	: epoch(epoch_num)
 	, learing_rate(learningrate)
 	, layer_num (ln)
@@ -55,11 +29,6 @@ NeuralNet::NeuralNet (int epoch_num, int learningrate, int ln, ...)
 		active_function.push_back (activefunction_maker (va_arg (args, char*)));
 	}
 	va_end (args);
-	for (int i = 0; i < layer_size.size (); ++i) {
-		//std::cout << layer_size [i] << " ";
-	}
-	//std::cout << std::endl;
-	std::cout << "active function size : " << active_function.size () << std::endl;
 	init_weights ();
 	init_bias ();
 }
@@ -69,7 +38,7 @@ bool NeuralNet::init_bias ()
 	for (int i = 0; i < layer_num-1; ++i) {
 		bias.push_back (-1.0);
 	}
-	std::cout << "bias size : " << bias.size () << std::endl;
+	//std::cout << "bias size : " << bias.size () << std::endl;
 	return true;
 }
 
@@ -85,7 +54,7 @@ bool NeuralNet::init_weights ()
 	for (long i = 0; i < weight_num; ++i) {
 		weights.push_back (w0+i*0.01);
 	}
-	std::cout << "weight size : " << weights.size () << std::endl;
+	//std::cout << "weight size : " << weights.size () << std::endl;
 	return true;
 }
 
@@ -100,11 +69,11 @@ bool NeuralNet::load_training_set (const std::string& train_file, std::vector<st
 	char* pend = NULL;
 	std::getline (infile, line);
 	training_size = strtol (line.c_str (), &pend, 10);
-	std::cout << "training size : " << training_size << std::endl;
+	//std::cout << "training size : " << training_size << std::endl;
 	input_num = strtol (pend, &pend, 10);
-	std::cout << "input : " << input_num << std::endl;
+	//std::cout << "input : " << input_num << std::endl;
 	output_num = strtol (pend, NULL, 10);
-	std::cout << "output : " << output_num << std::endl;
+	//std::cout << "output : " << output_num << std::endl;
 	while (training_set.size () < training_size && !infile.eof ()) {
 		std::vector <double> in;
 		std::vector <double> out;
@@ -137,6 +106,7 @@ bool NeuralNet::load_training_set (const std::string& train_file, std::vector<st
 		return false;
 	}
 	infile.close ();
+	/*
 	for (int i = 0; i < training_set.size (); ++i) {
 		for (int ii = 0; ii < training_set [i].first.size (); ++ii) {
 			std::cout << training_set [i].first [ii] << " ";
@@ -148,19 +118,16 @@ bool NeuralNet::load_training_set (const std::string& train_file, std::vector<st
 		std::cout << std::endl;
 	}
 	std::cout << std::endl;
-
+	*/
 	return true;
 }
 
 bool NeuralNet::sum_of_squares_error (const std::vector<double>& out, const std::vector<double>& t, double& error)
 {
-	//std::cout << " XXXXXXXXXXX " << t.size () << " " << layer_size [layer_num-1] << std::endl;
 	if (t.size () != layer_size [layer_num-1]) {
 		printf ("NeuralNet::sum_of_squares_error() : wrong target output size\n");
 		return false;
 	}
-	//std::vector<double> out;
-	//output (x, out);
 	for (int i = 1; i <= t.size (); ++i) {
 		error += pow (t[t.size () - i] - out[out.size () - i], 2);
 	}
@@ -427,14 +394,14 @@ bool NeuralNet::load (const std::string& model_file)
 	//std::getline (infile, comment_line);
 	//std::cout << comment_line << std::endl;
 	infile >> layer_num;
-	std::cout << "layer number " << layer_num << std::endl;
+	//std::cout << "layer number " << layer_num << std::endl;
 	//std::getline (infile, comment_line);
 	//std::cout << comment_line << std::endl;
 	for (int i = 0; i < layer_num; ++i) {
 		int n = 0;
 		infile >> n;
-		layer_size.push_back (n);
-		std::cout << "layer size " << n << std::endl;
+		//layer_size.push_back (n);
+		//std::cout << "layer size " << n << std::endl;
 	}
 	input_num = layer_size [0];
 	input_num = layer_size [layer_num-1];
@@ -443,11 +410,8 @@ bool NeuralNet::load (const std::string& model_file)
 	std::string fun_name;
 	for (int i = 0; i < layer_num-1; ++i) {
 		infile >> fun_name;
-		ActiveFunction *p = NULL;
-		if ("logisticsigmod" == fun_name) {
-			p = new LogisticSigmodFunction ();
-		}
-		active_function.push_back (p);
+		//std::cout << fun_name.c_str () << std::endl;
+		active_function.push_back (activefunction_maker (fun_name.c_str ()));
 	}
 	//std::getline (infile, comment_line);
 	//std::cout << comment_line << std::endl;
@@ -464,7 +428,7 @@ bool NeuralNet::load (const std::string& model_file)
 		double n = 0;
 		infile >> n;
 		weights.push_back (n);
-		std::cout << "weight " << weights [i] << std::endl;
+		//std::cout << "weight " << weights [i] << std::endl;
 	}
 
 	return true;
@@ -507,6 +471,44 @@ void NeuralNet::test ()
 
 
 /*
+ *
+ *
+ *
+ *
+ *
+ActiveFunction* activefunction_maker (const char *str)
+{
+	ActiveFunction* p = NULL;
+	printf ("str = %s\n", str);
+	//std::cout << strcmp ("negation", "negation") << std::endl;
+	if (0 == strcmp ("tanh", str)) {
+		p = new TanhFunction ();
+		if (NULL == p) {
+			printf ("can't allocate memory for tanh Function\n");
+			return NULL;
+		}
+		//printf ("negation\n");
+	}
+	else if (0 == strcmp ("logistic", str)) {
+		p = new LogisticSigmodFunction ();
+		if (NULL == p) {
+			printf ("Can't allocate memory for logistic function\n");
+			return NULL;
+		}
+		//printf ("logistic\n");
+	}
+	else {
+		p = new NullFunction ();
+		if (NULL == p) {
+			printf ("Can't allocate memory for null function\n");
+			return NULL;
+		}
+	}
+	return p;
+}
+
+
+
 bool NeuralNet::propagation (const std::vector<double>& input, std::vector<double>& output, const int layer)
 {
 	if (input.size () != layer_size [layer]) { 
