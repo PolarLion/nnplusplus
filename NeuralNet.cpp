@@ -48,7 +48,7 @@ bool NeuralNet::init_weights ()
  	int weight_num = 0;
 	weights.clear ();
 	//每一层加上一个bias的权重
-	for (int i = 0; i < layer_size.size () - 1; ++i) {
+	for (unsigned long i = 0; i < layer_size.size () - 1; ++i) {
 		weight_num += (layer_size [i] + 1 ) * layer_size [i+1];
 	}
 	double w0 = 0.1;//1.0 / weight_num;
@@ -69,7 +69,7 @@ bool NeuralNet::load_training_set (const std::string& train_file, std::vector<st
 	std::string line;
 	char* pend = NULL;
 	std::getline (infile, line);
-	training_size = strtol (line.c_str (), &pend, 10);
+	unsigned long training_size = strtol (line.c_str (), &pend, 10);
 	//std::cout << "training size : " << training_size << std::endl;
 	input_num = strtol (pend, &pend, 10);
 	//std::cout << "input : " << input_num << std::endl;
@@ -129,14 +129,14 @@ bool NeuralNet::sum_of_squares_error (const std::vector<double>& out, const std:
 		printf ("NeuralNet::sum_of_squares_error() : wrong target output size\n");
 		return false;
 	}
-	for (int i = 1; i <= t.size (); ++i) {
+	for (unsigned long i = 1; i <= t.size (); ++i) {
 		error += pow (t[t.size () - i] - out[out.size () - i], 2);
 	}
 	error /= 2;
 	return true;
 }
 
-bool NeuralNet::output (const std::vector<double>& x, std::vector<double>& out)
+bool NeuralNet::propagation (const std::vector<double>& x, std::vector<double>& out)
 {
 	out.clear (); 
 	out = x;
@@ -164,6 +164,16 @@ bool NeuralNet::output (const std::vector<double>& x, std::vector<double>& out)
  	return true; 
 }
 
+bool NeuralNet::output (const std::vector<double>& x, std::vector<double>& out)
+{
+	std::vector<double> o;
+	propagation (x, o);
+	for (int i = 0; i < output_num; ++i) {
+		out.push_back (o [o.size () - 1 - output_num]);
+	}
+	return true;
+}
+
 bool NeuralNet::compute_delta (const std::vector<double>& t, const std::vector<double>& out, std::vector<double>& delta)
 {
 	//输出层
@@ -174,9 +184,12 @@ bool NeuralNet::compute_delta (const std::vector<double>& t, const std::vector<d
 		//std::cout << "out " << out.size () - layer_size [layer_num-1] + i << " " <<  o << std::endl;
 		delta [i] = (t [i] - o);
 		//std::cout << "delta " << delta [i] << std::endl;
-		if ("logisticsigmod" == active_function [active_function.size () - 1]->name ()) {
+		if ("logistic" == active_function [active_function.size () - 1]->name ()) {
 			//std::cout << "sigmod\n";
-	 		delta [i] *= o * (1 - o);	
+	 		delta [i] *= o - pow (o, 2);;	
+		}
+		else if ("tanh" == active_function [active_function.size () - 1]->name ()) {
+			delta [i] *= 1 - pow (o, 2);
 		}
 	}
 
@@ -198,8 +211,11 @@ bool NeuralNet::compute_delta (const std::vector<double>& t, const std::vector<d
 				//std::cout << ii <<std::endl;
 				delta [delta_index] += weights [w_base + i * layer_size [layer_num-1] + ii] * delta [ii];
 			}
-			if ("logisticsigmod" == active_function [active_function.size () - 1]->name ()) {
+			if ("logistic" == active_function [active_function.size () - 1]->name ()) {
 				delta [delta_index] *= o * (1 - o); 
+			}
+			else if ("tanh" == active_function [active_function.size () - 1]->name ()) {
+				delta [delta_index] *= 1 - pow (o, 2);
 			}
 			//std::cout << " delta " << delta_index << " " << delta[delta_index] << std::endl;
 		}
@@ -220,7 +236,7 @@ bool NeuralNet::update_weights (const std::vector<double>& t, const std::vector<
 		return false;
 	}
 	//std::cout << "old weightx : ";
-	for (int i = 0; i < weights.size (); ++i) {
+	for (unsigned long i = 0; i < weights.size (); ++i) {
 		//std::cout << weights [i] << " ";
 	}
 	//std::cout << std::endl;
@@ -281,7 +297,7 @@ bool NeuralNet::train_step (double& e, const std::vector<double>& x, const std::
 	
 	//输入样本计算输出
 	std::vector<double> out;
-	output (x, out);
+	propagation (x, out);
 	//for (int ii = 0 ; ii < x.size (); ++ii) {
 	//	std::cout << x[ii] << " ";
 	//}
@@ -313,15 +329,16 @@ bool NeuralNet::train (const std::string& train_file)
 		//对训练集和随机洗牌
 		shuffle (training_set);
 		double e = 0;
-		for (int ii = 0; ii < training_set.size (); ++ii) {
+		for (unsigned long ii = 0; ii < training_set.size (); ++ii) {
 			train_step (e, training_set[ii].first, training_set[ii].second);	
 		}
-	 	printf("NeuralNet::train () : error = %f\n\n", e);
-		if (e < 0.001) {
+	 	//printf("NeuralNet::train () : error = %f\n\n", e);
+		if (e < 0.0001) {
+	 	  printf("NeuralNet::train () : after %d epoches, error = %f\n\n", i, e);
 			break;
 		}
 	}
-	 return true;
+	return true;
 }
 
 bool NeuralNet::save (const std::string& model_file)
@@ -334,25 +351,25 @@ bool NeuralNet::save (const std::string& model_file)
 	//outfile << "layers num " << std::endl;
 	outfile << layer_num << std::endl;
 	//outfile << "layers size" << std::endl;
-	for (int i = 0; i < layer_size.size (); ++i) {
+	for (unsigned long i = 0; i < layer_size.size (); ++i) {
 		outfile << layer_size [i] << " ";
 	}
 	outfile << std::endl;
 	//outfile << "active functions " << std::endl;
-	for (int i = 0; i < active_function.size (); ++i) {
+	for (unsigned long i = 0; i < active_function.size (); ++i) {
 		outfile << active_function [i]->name () << " ";
 	}
 	outfile << std::endl;
 
 	//outfile << "biaes " << std::endl;
-	for (int i = 0; i< bias.size (); ++i) {
+	for (unsigned long i = 0; i< bias.size (); ++i) {
 		outfile << bias [i] << " ";
 	}
 	outfile << std::endl;
 
 	//outfile << "weights " << std::endl;
 	outfile << weights.size () << std::endl;
-	for (int i = 0; i < weights.size (); ++i) {
+	for (unsigned long i = 0; i < weights.size (); ++i) {
 		outfile << weights [i] << " ";
 	}
 	outfile << std::endl;
@@ -368,7 +385,7 @@ bool NeuralNet::clear ()
 	weights.clear ();
 	layer_size.clear ();
 	bias.clear ();
-	for (int  i = 0; i < active_function.size (); ++i) {
+	for (unsigned long i = 0; i < active_function.size (); ++i) {
 		if (NULL != active_function [i]) {
 			delete active_function [i];
 		}
@@ -425,7 +442,8 @@ bool NeuralNet::load (const std::string& model_file)
 		weights.push_back (n);
 		//std::cout << "weight " << weights [i] << std::endl;
 	}
-
+	input_num = layer_size [0];
+	output_num = layer_size [layer_size.size() - 1];
 	return true;
 }
 
@@ -433,25 +451,25 @@ void NeuralNet::show () const
 {
 	std::cout << "layer number : " << layer_num << std::endl;
 	std::cout << "layers size" << std::endl;
-	for (int i = 0; i < layer_size.size (); ++i) {
+	for (unsigned long i = 0; i < layer_size.size (); ++i) {
 		std::cout << layer_size [i] << " ";
 	}
 	std::cout << std::endl;
 	std::cout << "active functions " << std::endl;
-	for (int i = 0; i < active_function.size (); ++i) {
+	for (unsigned long i = 0; i < active_function.size (); ++i) {
 		std::cout << active_function [i]->name () << " ";
 	}
 	std::cout << std::endl;
 
 	std::cout << "biaes " << std::endl;
-	for (int i = 0; i< bias.size (); ++i) {
+	for (unsigned long i = 0; i< bias.size (); ++i) {
 		std::cout << bias [i] << " ";
 	}
 	std::cout << std::endl;
 
 	std::cout << "weights " << std::endl;
 	std::cout << weights.size () << std::endl;
-	for (int i = 0; i < weights.size (); ++i) {
+	for (unsigned long i = 0; i < weights.size (); ++i) {
 		std::cout << weights [i] << " ";
 	}
 	std::cout << std::endl;
@@ -466,65 +484,8 @@ void NeuralNet::test ()
 	save ("test/model.txt");
 	load ("test/model.txt");
 	return;
-
-
-	vector<double> x;
-	for (int i = 0; i < 5; ++i) {
-		x.push_back (i/5.0);
-		cout << x[i] << " ";
-	}
-	cout << endl;
-	vector<double> h1;
-	propagation (x, h1, 0);
-	for (int i = 0; i < h1.size (); ++i) {
-		cout << h1[i] << " ";
-	}
-	cout << endl;
-	vector<double> out;
-	output (x, out);
-	for (int i = 0; i < out.size (); ++i) {
-		cout << out[i] << " ";
-	}
-	cout  << endl;
 }
 
 
 
 
-
-/*
- *
- *
- *
- *
- *
-
-
-
-bool NeuralNet::propagation (const std::vector<double>& input, std::vector<double>& output, const int layer)
-{
-	if (input.size () != layer_size [layer]) { 
-		std::cout << input.size () << " " << layer_size [layer] << std::endl; 
-		printf ("NeuralNet::propagation() : wrong input size\n");
-		return false;
-	}
- 	if (layer >= layer_size.size () - 1 ) {
-		printf ("NeuralNet::propagation () : wrong layer number\n");
-		return false;
-	}
-	//std::cout << active_function.size () << std::endl;
-	int base = 0;
-	for (int i = 0; i < layer && i < layer_size.size () - 1; ++i) {
-		base += layer_size [i] * layer_size [i+1];
-	}
-	for (int i = 0; i < layer_size [layer+1]; ++i) {
-		double ne = 0;
-		for (int j = 0; j < layer_size [layer]; ++j) {
-			ne += input [j] * weights [base + i * input.size () + j];
-		}
-		//ne += basis [layer];
-		output.push_back ((*active_function [layer])(ne));
-	}
- 	return true;	
-}
-*/
