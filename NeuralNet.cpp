@@ -9,7 +9,8 @@
 using namespace nnplusplus;
 
 
-NeuralNet::NeuralNet (const std::string& model_filename)
+NeuralNet::NeuralNet ( const std::string& model_filename)
+	: epoch (0)
 {
 	load (model_filename);
 }
@@ -135,7 +136,6 @@ bool NeuralNet::sum_of_squares_error (const std::vector<double>& out, const std:
 	return true;
 }
 
-
 bool NeuralNet::output (const std::vector<double>& x, std::vector<double>& out)
 {
 	out.clear (); 
@@ -163,7 +163,6 @@ bool NeuralNet::output (const std::vector<double>& x, std::vector<double>& out)
 	}
  	return true; 
 }
-
 
 bool NeuralNet::compute_delta (const std::vector<double>& t, const std::vector<double>& out, std::vector<double>& delta)
 {
@@ -213,7 +212,6 @@ bool NeuralNet::compute_delta (const std::vector<double>& t, const std::vector<d
 
 	return true;
 }
-
 
 bool NeuralNet::update_weights (const std::vector<double>& t, const std::vector<double>& out)
 {
@@ -277,7 +275,6 @@ bool NeuralNet::update_weights (const std::vector<double>& t, const std::vector<
 	return true;
 }
 
-
 bool NeuralNet::train_step (double& e, const std::vector<double>& x, const std::vector<double>& t)
 {
 	//std::cout << x.size () << std::endl;
@@ -308,7 +305,6 @@ bool NeuralNet::train_step (double& e, const std::vector<double>& x, const std::
 	return true;
 }
 
-
 bool NeuralNet::train (const std::string& train_file)
 {	
 	std::vector<std::pair<std::vector<double>, std::vector<double>>> training_set;
@@ -327,7 +323,6 @@ bool NeuralNet::train (const std::string& train_file)
 	}
 	 return true;
 }
-
 
 bool NeuralNet::save (const std::string& model_file)
 {
@@ -362,7 +357,7 @@ bool NeuralNet::save (const std::string& model_file)
 	}
 	outfile << std::endl;
 
-	 return true;
+	 return true; 
 }
 
 bool NeuralNet::clear ()
@@ -387,10 +382,10 @@ bool NeuralNet::load (const std::string& model_file)
 	clear ();
 	std::ifstream infile (model_file);
 	if (infile.fail ()) {
-		printf ("NeuralNet::load () : open file %s\n", model_file.c_str ());
+		printf ("NeuralNet::load () : open file %s error\n", model_file.c_str ());
 		return false;
 	}
-	std::string comment_line;
+	//std::string comment_line;
 	//std::getline (infile, comment_line);
 	//std::cout << comment_line << std::endl;
 	infile >> layer_num;
@@ -400,7 +395,7 @@ bool NeuralNet::load (const std::string& model_file)
 	for (int i = 0; i < layer_num; ++i) {
 		int n = 0;
 		infile >> n;
-		//layer_size.push_back (n);
+		layer_size.push_back (n);
 		//std::cout << "layer size " << n << std::endl;
 	}
 	input_num = layer_size [0];
@@ -434,6 +429,33 @@ bool NeuralNet::load (const std::string& model_file)
 	return true;
 }
 
+void NeuralNet::show () const
+{
+	std::cout << "layer number : " << layer_num << std::endl;
+	std::cout << "layers size" << std::endl;
+	for (int i = 0; i < layer_size.size (); ++i) {
+		std::cout << layer_size [i] << " ";
+	}
+	std::cout << std::endl;
+	std::cout << "active functions " << std::endl;
+	for (int i = 0; i < active_function.size (); ++i) {
+		std::cout << active_function [i]->name () << " ";
+	}
+	std::cout << std::endl;
+
+	std::cout << "biaes " << std::endl;
+	for (int i = 0; i< bias.size (); ++i) {
+		std::cout << bias [i] << " ";
+	}
+	std::cout << std::endl;
+
+	std::cout << "weights " << std::endl;
+	std::cout << weights.size () << std::endl;
+	for (int i = 0; i < weights.size (); ++i) {
+		std::cout << weights [i] << " ";
+	}
+	std::cout << std::endl;
+}
 
 void NeuralNet::test ()
 {
@@ -476,36 +498,6 @@ void NeuralNet::test ()
  *
  *
  *
-ActiveFunction* activefunction_maker (const char *str)
-{
-	ActiveFunction* p = NULL;
-	printf ("str = %s\n", str);
-	//std::cout << strcmp ("negation", "negation") << std::endl;
-	if (0 == strcmp ("tanh", str)) {
-		p = new TanhFunction ();
-		if (NULL == p) {
-			printf ("can't allocate memory for tanh Function\n");
-			return NULL;
-		}
-		//printf ("negation\n");
-	}
-	else if (0 == strcmp ("logistic", str)) {
-		p = new LogisticSigmodFunction ();
-		if (NULL == p) {
-			printf ("Can't allocate memory for logistic function\n");
-			return NULL;
-		}
-		//printf ("logistic\n");
-	}
-	else {
-		p = new NullFunction ();
-		if (NULL == p) {
-			printf ("Can't allocate memory for null function\n");
-			return NULL;
-		}
-	}
-	return p;
-}
 
 
 

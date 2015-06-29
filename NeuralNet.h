@@ -47,6 +47,7 @@ public:
 	bool save (const std::string& model_file);
 	bool clear ();
 	bool load (const std::string& model_file);
+	void show () const;
 	void test ();
 };
 
