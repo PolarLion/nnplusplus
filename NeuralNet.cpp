@@ -15,7 +15,6 @@ NeuralNet::NeuralNet ( const std::string& model_filename)
 	load (model_filename);
 }
 
-
 NeuralNet::NeuralNet (int epoch_num, double learningrate, int ln, ...) 
 	: epoch(epoch_num)
 	, learing_rate(learningrate)
@@ -166,6 +165,7 @@ bool NeuralNet::propagation (const std::vector<double>& x, std::vector<double>& 
 
 bool NeuralNet::output (const std::vector<double>& x, std::vector<double>& out)
 {
+	out.clear ();
 	std::vector<double> o;
 	propagation (x, o);
 	for (int i = 0; i < output_num; ++i) {
@@ -196,20 +196,27 @@ bool NeuralNet::compute_delta (const std::vector<double>& t, const std::vector<d
 	//隐藏层
 	int o_base = out.size () - layer_size [layer_num-1];
 	int w_base = weights.size () - layer_size [layer_num-1] * (1+layer_size [layer_num-2]);
+	int d_base = layer_size [layer_num - 1];
 	for (int layer = layer_num - 2; layer > 0; --layer) {
 		o_base -= layer_size [layer];
 		for (int i = 0; i < layer_size [layer]; ++i) {
 			delta.push_back (0.0);
-			//std::cout << o_base + i<< std::endl;
+			//std::cout << "oi " << o_base + i<< std::endl;
 			double o = out [o_base + i];
 			//std::cout << "out " << o_base.size () - 2 + i << " " <<  o << std::endl;
-			int delta_index = layer_size [layer_num - 1] + i;
+			int delta_index = d_base + i;
 			//std::cout << "di "  << delta_index << std::endl;
 			//delta[delta_index] = 0.0;
-			for (int ii = 0; ii < layer_size [layer_num - 1]; ++ii) {
-				//std::cout << "- " << w_base + i * layer_size [layer_num-1] + ii  << std::endl;
+			for (int ii = 0; ii < layer_size [layer+1]; ++ii) {
+				if (layer+1 == layer_num-1) {
+					//std::cout << "wi " << w_base + i * layer_size [layer+1] + ii  << std::endl;
+					delta [delta_index] += weights [w_base + i * layer_size [layer_num-1] + ii] * delta [ii];
+				}
+				else {
+					//std::cout << "wi " << w_base + i * (1+layer_size [layer+1]) + ii  << std::endl;
+					delta [delta_index] += weights [w_base + i * (1+layer_size [layer_num-1]) + ii] * delta [ii];
+				}
 				//std::cout << ii <<std::endl;
-				delta [delta_index] += weights [w_base + i * layer_size [layer_num-1] + ii] * delta [ii];
 			}
 			if ("logistic" == active_function [active_function.size () - 1]->name ()) {
 				delta [delta_index] *= o * (1 - o); 
@@ -219,6 +226,8 @@ bool NeuralNet::compute_delta (const std::vector<double>& t, const std::vector<d
 			}
 			//std::cout << " delta " << delta_index << " " << delta[delta_index] << std::endl;
 		}
+		d_base += layer_size [layer];
+		w_base -= layer_size [layer] * (1+layer_size [layer]);
 	}
 	//std::cout << "delta : ";
 	//for (int i = 0; i < delta.size (); ++i) {
@@ -325,19 +334,27 @@ bool NeuralNet::train (const std::string& train_file)
 {	
 	std::vector<std::pair<std::vector<double>, std::vector<double>>> training_set;
 	load_training_set (train_file, training_set);
-	for (int i = 0; i < epoch; ++i) {
+	int i = 0;
+	double e1 = 0;
+	double e2 = 0;
+	for (i = 0; i < epoch; ++i) {
 		//对训练集和随机洗牌
 		shuffle (training_set);
-		double e = 0;
+		e1 = e2;
+		e2 = 0;
 		for (unsigned long ii = 0; ii < training_set.size (); ++ii) {
-			train_step (e, training_set[ii].first, training_set[ii].second);	
+			train_step (e2, training_set[ii].first, training_set[ii].second);	
 		}
 	 	//printf("NeuralNet::train () : error = %f\n\n", e);
-		if (e < 0.0001) {
-	 	  printf("NeuralNet::train () : after %d epoches, error = %f\n\n", i, e);
+		if (e2 / e1 < 0.9) {
+			learing_rate /= 2;
+			printf("NeuralNet::train () : after %d epoches, error = %f, learning rate = %f\n\n", i, e2, learing_rate);
+		}
+		if (e2 < 0.0001) {
 			break;
 		}
 	}
+	printf("NeuralNet::train () : after %d epoches, error = %f, learning rate = %f\n\n", i, e2, learing_rate);
 	return true;
 }
 
@@ -485,7 +502,6 @@ void NeuralNet::test ()
 	load ("test/model.txt");
 	return;
 }
-
 
 
 
