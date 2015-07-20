@@ -1,16 +1,17 @@
 #include "auxiliary.h"
 
-void set_seed (unsigned int seed)
+
+void nnplusplus::set_seed (unsigned int seed)
 {
-	srand (seed);
+  srand (seed);
 }
 
-int rand_int (int from, int to)
+int nnplusplus::rand_int (int from, int to)
 {
-	return from + rand () % (to + 1);
+  return from + rand () % (to + 1);
 }
 
-double rand_double (double from, double to)
+double nnplusplus::rand_double (double from, double to)
 {
-	return from + rand () / (double)(RAND_MAX / to);
+  return from + rand () / (double)(RAND_MAX / to);
 }
