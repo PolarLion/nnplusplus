@@ -340,17 +340,18 @@ bool NeuralNet::train (const std::string& train_file)
 	for (i = 0; i < epoch; ++i) {
 		//对训练集和随机洗牌
 		shuffle (training_set);
-		e1 = e2;
+		//e1 = e2;
 		e2 = 0;
 		for (unsigned long ii = 0; ii < training_set.size (); ++ii) {
 			train_step (e2, training_set[ii].first, training_set[ii].second);	
 		}
 	 	//printf("NeuralNet::train () : error = %f\n\n", e);
-		if (e2 / e1 < 0.9) {
-			learing_rate /= 2;
+		//if (e2 / e1 < 0.9) {
+			//learing_rate /= 2;
+			//printf("NeuralNet::train () : after %d epoches, error = %f, learning rate = %f\n\n", i, e2, learing_rate);
+		//}
+		if (e2 < 0.000001) {
 			printf("NeuralNet::train () : after %d epoches, error = %f, learning rate = %f\n\n", i, e2, learing_rate);
-		}
-		if (e2 < 0.0001) {
 			break;
 		}
 	}
@@ -391,7 +392,7 @@ bool NeuralNet::save (const std::string& model_file)
 	}
 	outfile << std::endl;
 
-	 return true; 
+	return true; 
 }
 
 bool NeuralNet::clear ()
