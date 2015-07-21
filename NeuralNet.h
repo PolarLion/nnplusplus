@@ -35,6 +35,7 @@ public:
   NeuralNet () :  epoch(0), learing_rate(0), layer_num (0) {}
   NeuralNet (const std::string& model_filename);
   NeuralNet (int epoch, double learingrate, int layer_num, ...);
+  ~NeuralNet ();
 
   bool init_weights ();
   bool init_bias ();
@@ -58,20 +59,3 @@ public:
 
 
 #endif
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
