@@ -7,6 +7,7 @@
 #include <ctime>
 #include <ratio>
 #include <chrono>
+//#include "Eigen/Dense"
 
 
 using namespace nnplusplus;
@@ -32,21 +33,50 @@ NeuralNet::NeuralNet (int epoch_num, double learningrate, int ln, ...)
   }
   va_end (args);
   init_weights ();
+  init_weight ();
   init_bias ();
+  init_biasv ();
+}
+
+NeuralNet::~NeuralNet ()
+{
+  clear();
+}
+
+//Eigen
+bool NeuralNet::init_biasv ()
+{
+  for (int i = 1; i < layer_num; ++i) {
+    Eigen::VectorXd v = Eigen::VectorXd::Constant(layer_size[i], 1);
+    biasv.push_back(v);
+    //std::cout << v << std::endl;
+  }
+  return true;
 }
 
 bool NeuralNet::init_bias ()
 {
-  for (int i = 0; i < layer_num-1; ++i) {
+  for (int i = 1; i < layer_num-1; ++i) {
     bias.push_back (-1.0);
   }
   //std::cout << "bias size : " << bias.size () << std::endl;
   return true;
 }
 
+//Eigen
+bool NeuralNet::init_weight ()
+{
+  for (unsigned long i = 0; i < layer_size.size() - 1; ++i) {
+    Eigen::MatrixXd m (layer_size[i+1], layer_size[i]); 
+    //std::cout << m << std::endl;
+    weight.push_back(m);
+  }
+  return true;
+}
+
 bool NeuralNet::init_weights ()
 {
-   int weight_num = 0;
+  int weight_num = 0;
   weights.clear ();
   //每一层加上一个bias的权重
   for (unsigned long i = 0; i < layer_size.size () - 1; ++i) {
@@ -139,7 +169,7 @@ bool NeuralNet::sum_of_squares_error (const std::vector<double>& out, const std:
 
 bool NeuralNet::propagation (const std::vector<double>& x, std::vector<double>& out)
 {
-  out.clear (); 
+  out.clear(); 
   out = x;
   int w_base = 0;
   int o_base = 0;
@@ -162,7 +192,22 @@ bool NeuralNet::propagation (const std::vector<double>& x, std::vector<double>& 
       out.push_back ((*active_function [layer])(ne));
     }
   }
-   return true; 
+  return true; 
+}
+
+//Eigen
+bool NeuralNet::propagation (const Eigen::VectorXd& x, std::vector<Eigen::VectorXd>& out)
+{
+  //std::cout << x << std::endl;
+  out.push_back(x);
+  for (unsigned long i = 0; i < weight.size(); ++i) {
+    //std::cout << weight[i] << std::endl;
+    //printf("heheh\n");
+    Eigen::VectorXd v = (*active_function[i])((biasv[i] + weight[i] * out[i]));
+    out.push_back(v);
+    //std::cout << v << std::endl;
+  }
+  return true;
 }
 
 bool NeuralNet::output (const std::vector<double>& x, std::vector<double>& out)
@@ -171,8 +216,17 @@ bool NeuralNet::output (const std::vector<double>& x, std::vector<double>& out)
   std::vector<double> o;
   propagation (x, o);
   for (int i = 0; i < output_num; ++i) {
-    out.push_back (o [o.size () - 1 - output_num]);
+    out.push_back (o [o.size () - output_num + i]);
   }
+  return true;
+}
+
+//Eigen
+bool NeuralNet::output (const Eigen::VectorXd& x, Eigen::VectorXd& out)
+{
+  std::vector<Eigen::VectorXd> o;
+  propagation (x, o);
+  out = o[o.size()-1];
   return true;
 }
 
@@ -181,7 +235,7 @@ bool NeuralNet::compute_delta (const std::vector<double>& t, const std::vector<d
   //输出层
   //std::cout << "layer size " << layer_size [layer_num-1] << std::endl;
   for (int i = 0; i < layer_size [layer_num-1]; ++i) {
-     delta.push_back (0.0);
+    delta.push_back (0.0);
     double o = out [out.size () - layer_size [layer_num-1] + i];
     //std::cout << "out " << out.size () - layer_size [layer_num-1] + i << " " <<  o << std::endl;
     delta [i] = (t [i] - o);
@@ -337,7 +391,7 @@ bool NeuralNet::train (const std::string& train_file)
   std::vector<std::pair<std::vector<double>, std::vector<double>>> training_set;
   load_training_set (train_file, training_set);
   int i = 0;
-  double e1 = 0;
+  //double e1 = 0;
   double e2 = 0;
   for (i = 0; i < epoch; ++i) {
     //对训练集和随机洗牌
@@ -511,6 +565,4 @@ void NeuralNet::test ()
   load ("test/model.txt");
   return;
 }
-
-
 

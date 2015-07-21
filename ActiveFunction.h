@@ -4,6 +4,7 @@
 #include <math.h>
 #include <string.h> 
 #include <string>
+#include "Eigen/Dense"
 
 namespace nnplusplus {
 
@@ -12,6 +13,7 @@ class ActiveFunction
 public:
   virtual std::string name () const = 0;
   virtual double operator () (const double x) = 0;
+  virtual Eigen::VectorXd operator () (const Eigen::VectorXd& x) = 0;
 };
 
 
@@ -24,6 +26,10 @@ public:
 
   double operator () (const double x) {
     printf ("null function\n" );
+    return x;
+  }
+
+  Eigen::VectorXd operator () (const Eigen::VectorXd& x) {
     return x;
   }
 };
@@ -39,6 +45,14 @@ public:
   double operator () (const double x) {
     return 1 / (1 + exp (-x));
   }
+
+  Eigen::VectorXd operator () (const Eigen::VectorXd& x) {
+    Eigen::VectorXd y = x;
+    for (auto i = 0; i < x.size(); ++i) {
+      y[i] = 1 / (1 + exp (x[i]));
+    }
+    return y;
+  }
 };
 
 class TanhFunction: public ActiveFunction
@@ -50,7 +64,16 @@ public:
 
   double operator () (const double x) {
     double e1 = exp (x), e2 = exp (-x);
-    return (e1 - e2) / (e1 + e2);
+    return (e1 - e2)  / (e1 + e2);
+  }
+
+  Eigen::VectorXd operator () (const Eigen::VectorXd& x) {
+    Eigen::VectorXd y = x;
+    for (auto i = 0; i < x.size(); ++i) {
+      double e1 = exp (x[i]), e2 = exp (-x[i]);
+      y[i] = (e1 - e2)  / (e1 + e2);
+    }
+    return y;
   }
 };
 
