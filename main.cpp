@@ -1,4 +1,5 @@
 #include <iostream>
+//#include <omp.h>
 
 #include "NeuralNet.h"
 #include "auxiliary.h"
@@ -8,6 +9,9 @@ using namespace std;
 
 int main (int argc, char** argv) 
 {
+  //omp_set_num_threads(32);
+  //Eigen::setNbThreads(32);
+  //Eigen::initParallel();
 	std::cout << "hello world\n";
 	
 	//char* pend = NULL;
@@ -21,12 +25,18 @@ int main (int argc, char** argv)
 		learning_rate = strtod (argv[2], NULL);
 	}
 	//NeuralNet n ("test/model.txt");
-	//NeuralNet n (epoch, learning_rate, 4, 2, 1000, 1000, 1,"logistic", "logistic", "logistic");
-	NeuralNet n (epoch, learning_rate, 3, 2, 3, 1, "logistic", "logistic");
-
-	n.test ();
-	//n.load ("test/model.txt");
+	//NeuralNet n (epoch, learning_rate, 4, 2, 100000, 10000, 1,"logistic", "logistic", "logistic");
+	NeuralNet n (epoch, learning_rate, 3, 2, 2, 1, "logistic", "logistic");
 	n.show ();
+
+  std::chrono::steady_clock::time_point start = std::chrono::steady_clock::now();
+	n.test ();
+  std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
+  std::chrono::duration<double> time_span = std::chrono::duration_cast<std::chrono::duration<double>>(end-start);
+  std::cout << "propagation time: " << time_span.count() << " seconds" << std::endl;
+	//n.load ("test/model.txt");
+  return 0;
+  /*
 	std::vector <double> x(2);
 	std::vector <double> out;
 	x [0] = 1;
@@ -44,14 +54,15 @@ int main (int argc, char** argv)
 		cout << "out : " << out[i] << endl;
 	}
   out.clear();
-  std::chrono::steady_clock::time_point start = std::chrono::steady_clock::now();
+  start = std::chrono::steady_clock::now();
   n.propagation (x, out);
-  std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
-  std::chrono::duration<double> time_span = std::chrono::duration_cast<std::chrono::duration<double>>(end-start);
+  end = std::chrono::steady_clock::now();
+  time_span = std::chrono::duration_cast<std::chrono::duration<double>>(end-start);
   std::cout << "propagation time: " << time_span.count() << " seconds" << std::endl;
   std::cout << "result " << out[out.size()-1] << std::endl;
   //n.output (x, out);
   //std::cout << "result " << out[0] << std::endl;
+  
   Eigen::VectorXd xx(2);
   xx[0] = 1;
   xx[1] = 1;
@@ -62,6 +73,7 @@ int main (int argc, char** argv)
   time_span = std::chrono::duration_cast<std::chrono::duration<double>>(end-start);
   std::cout << "new propagation time: " << time_span.count() << " seconds" << std::endl;
   std::cout << "result " << xout[xout.size()-1] << std::endl;
+  */
 
 	return 0;
 }
