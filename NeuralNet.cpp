@@ -28,6 +28,7 @@ NeuralNet::NeuralNet (int epoch_num, double learningrate, int ln, ...)
   for (int i = 0; i < layer_num; ++i) {
     layer_size.push_back (va_arg (args, int));
   }
+  output_num = layer_size[layer_size.size()-1];
   for (int i = 0; i < layer_num - 1; ++i) {
     active_function.push_back (activefunction_maker (va_arg (args, char*)));
   }
@@ -47,7 +48,7 @@ NeuralNet::~NeuralNet ()
 bool NeuralNet::init_biasv ()
 {
   for (int i = 1; i < layer_num; ++i) {
-    Eigen::VectorXd v = Eigen::VectorXd::Constant(layer_size[i], 1);
+    Eigen::VectorXd v = Eigen::VectorXd::Constant(layer_size[i], -0.1);
     biasv.push_back(v);
     //std::cout << v << std::endl;
   }
@@ -56,7 +57,7 @@ bool NeuralNet::init_biasv ()
 
 bool NeuralNet::init_bias ()
 {
-  for (int i = 1; i < layer_num-1; ++i) {
+  for (int i = 0; i < layer_num-1; ++i) {
     bias.push_back (-1.0);
   }
   //std::cout << "bias size : " << bias.size () << std::endl;
@@ -67,7 +68,7 @@ bool NeuralNet::init_bias ()
 bool NeuralNet::init_weight ()
 {
   for (unsigned long i = 0; i < layer_size.size() - 1; ++i) {
-    Eigen::MatrixXd m (layer_size[i+1], layer_size[i]); 
+    Eigen::MatrixXd m = Eigen::MatrixXd::Constant(layer_size[i+1], layer_size[i], 0.1); 
     //std::cout << m << std::endl;
     weight.push_back(m);
   }
@@ -84,7 +85,7 @@ bool NeuralNet::init_weights ()
   }
   double w0 = 0.1;//1.0 / weight_num;
   for (long i = 0; i < weight_num; ++i) {
-    weights.push_back (w0+i*0.01);
+    weights.push_back (w0);
   }
   //std::cout << "weight size : " << weights.size () << std::endl;
   return true;
@@ -154,6 +155,8 @@ bool NeuralNet::load_training_set (const std::string& train_file, std::vector<st
   return true;
 }
 
+
+
 bool NeuralNet::sum_of_squares_error (const std::vector<double>& out, const std::vector<double>& t, double& error)
 {
   if (t.size () != layer_size [layer_num-1]) {
@@ -188,6 +191,7 @@ bool NeuralNet::propagation (const std::vector<double>& x, std::vector<double>& 
       }
       //std::cout << "bias weights : " << w_base + i * (1+layer_size [layer]) + layer_size [layer] << std::endl;
       ne += bias [layer] * weights [w_base + i * (1+layer_size [layer]) + layer_size [layer]];
+      //std::cout << "bias " << bias [layer] << std::endl;
       //std::cout << ne << std::endl;
       out.push_back ((*active_function [layer])(ne));
     }
@@ -202,7 +206,7 @@ bool NeuralNet::propagation (const Eigen::VectorXd& x, std::vector<Eigen::Vector
   out.push_back(x);
   for (unsigned long i = 0; i < weight.size(); ++i) {
     //std::cout << weight[i] << std::endl;
-    //printf("heheh\n");
+    //std::cout << biasv[i] + weight[i] * out[i] << std::endl;
     Eigen::VectorXd v = (*active_function[i])((biasv[i] + weight[i] * out[i]));
     out.push_back(v);
     //std::cout << v << std::endl;
@@ -401,7 +405,7 @@ bool NeuralNet::train (const std::string& train_file)
     for (unsigned long ii = 0; ii < training_set.size (); ++ii) {
       train_step (e2, training_set[ii].first, training_set[ii].second);  
     }
-     //printf("NeuralNet::train () : error = %f\n\n", e);
+    //printf("NeuralNet::train () : error = %f\n\n", e);
     //if (e2 / e1 < 0.9) {
       //learing_rate /= 2;
       //printf("NeuralNet::train () : after %d epoches, error = %f, learning rate = %f\n\n", i, e2, learing_rate);
@@ -535,6 +539,7 @@ void NeuralNet::show () const
   }
   std::cout << std::endl;
 
+  std::cout << "weights size " << weights.size() << std::endl;
   /*
   std::cout << "biaes " << std::endl;
   for (unsigned long i = 0; i< bias.size (); ++i) {
