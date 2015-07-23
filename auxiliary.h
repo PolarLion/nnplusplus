@@ -29,7 +29,6 @@ void swap (std::vector<A>& a, int index1, int index2)
 template <typename T>
 void shuffle (std::vector<T>& a)
 {
-  using namespace nnplusplus;
   std::chrono::steady_clock::time_point start = std::chrono::steady_clock::now();
   for (int i = 0; i < 10; ++i) {
     i += i;
