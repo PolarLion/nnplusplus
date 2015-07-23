@@ -30,6 +30,7 @@ public:
   }
 
   Eigen::VectorXd operator () (const Eigen::VectorXd& x) {
+    printf ("null function\n");
     return x;
   }
 };
@@ -47,9 +48,10 @@ public:
   }
 
   Eigen::VectorXd operator () (const Eigen::VectorXd& x) {
-    Eigen::VectorXd y = x;
+    //printf ("logistic\n");
+    Eigen::VectorXd y = Eigen::VectorXd::Constant(x.size(), 0.0);
     for (auto i = 0; i < x.size(); ++i) {
-      y[i] = 1 / (1 + exp (x[i]));
+      y[i] = 1 / (1 + exp (-x[i]));
     }
     return y;
   }
@@ -68,7 +70,7 @@ public:
   }
 
   Eigen::VectorXd operator () (const Eigen::VectorXd& x) {
-    Eigen::VectorXd y = x;
+    Eigen::VectorXd y = Eigen::VectorXd::Constant(x.size(), 0.0);
     for (auto i = 0; i < x.size(); ++i) {
       double e1 = exp (x[i]), e2 = exp (-x[i]);
       y[i] = (e1 - e2)  / (e1 + e2);
@@ -112,7 +114,3 @@ public:
 }
 
 #endif
-
-
-
-
