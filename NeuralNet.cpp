@@ -255,15 +255,18 @@ bool NeuralNet::update_weights (const Eigen::VectorXd& t, const std::vector<Eige
   
   for (long layer = layer_num-2; layer >= 0; --layer) {
     //std::cout << "layer " << layer << std::endl;
-    for (long i = 0; i < layer_size[layer]; ++i) {
-      for (long ii = 0; ii < layer_size[layer+1]; ++ii) {
+    //std::cout << "out \n" << layer_out[layer] << std::endl;
+    //std::cout << "delat\n" << layer_delta[layer_num-2-layer] << std::endl;
+    weight[layer] += learing_rate * layer_delta[layer_num-2-layer] * layer_out[layer].transpose();
+    //for (long i = 0; i < layer_size[layer]; ++i) {
+      //for (long ii = 0; ii < layer_size[layer+1]; ++ii) {
         //std::cout << "ii " << ii << " i " << i << std::endl;
         //std::cout << "delta index " << layer_num-2-layer << std::endl;
         //std::cout << layer_out[layer][i] << " " << layer_delta[layer_num-2-layer][ii] << std::endl;
-        weight[layer](ii, i) += learing_rate * layer_out[layer][i] * layer_delta[layer_num-2-layer][ii];
+        //weight[layer](ii, i) += learing_rate * layer_out[layer][i] * layer_delta[layer_num-2-layer][ii];
         //std::cout << learing_rate * layer_out[layer][i] * layer_delta[layer_num-2-layer][ii] << std::endl;
-      }
-    }
+      //}
+    //}
     for (long ii = 0; ii < layer_size[layer+1]; ++ii) {
       //std::cout << "biasv delta index " << layer_num-2-layer << std::endl;
       bias_weight[layer][ii] += learing_rate * (-1) * layer_delta[layer_num-2-layer][ii];
@@ -287,7 +290,7 @@ bool NeuralNet::train_step (double& e, const Eigen::VectorXd& x, const Eigen::Ve
 }
 
 //Eigen
-bool NeuralNet::train_m (const std::string& train_file)
+bool NeuralNet::train (const std::string& train_file)
 {
   std::vector<std::pair<Eigen::VectorXd, Eigen::VectorXd>> training_set;
   load_training_set (train_file, training_set);
@@ -305,6 +308,23 @@ bool NeuralNet::train_m (const std::string& train_file)
     }
   }
   printf("NeuralNet::train () : after %d epoches, error = %f, learning rate = %f\n\n", i, e, learing_rate);
+  return true;
+}
+
+bool NeuralNet::clear ()
+{
+  layer_num = 0;
+  input_num = 0;
+  output_num = 0;
+  weight.clear ();
+  layer_size.clear ();
+  biasv.clear ();
+  for (unsigned long i = 0; i < active_function.size (); ++i) {
+    if (NULL != active_function [i]) {
+      delete active_function [i];
+    }
+  }
+  active_function.clear ();
   return true;
 }
 
@@ -326,94 +346,70 @@ bool NeuralNet::save (const std::string& model_file)
   }
   outfile << std::endl;
   for (unsigned long i = 0; i< biasv.size (); ++i) {
-    outfile << biasv[i] << std::endl;
+    outfile << biasv[i] << " ";
   }
   outfile << std::endl;
   for (unsigned long i = 0; i < weight.size (); ++i) {
     outfile << weight[i] << std::endl;
   }
   outfile << std::endl;
-  return true;
-}
-
-
-bool NeuralNet::clear ()
-{
-  layer_num = 0;
-  input_num = 0;
-  output_num = 0;
-  weight.clear ();
-  layer_size.clear ();
-  biasv.clear ();
-  for (unsigned long i = 0; i < active_function.size (); ++i) {
-    if (NULL != active_function [i]) {
-      delete active_function [i];
-    }
+  for (unsigned long i = 0; i < bias_weight.size(); ++i) {
+    outfile << bias_weight[i] << std::endl;
   }
-  active_function.clear ();
+  outfile << std::endl;
   return true;
 }
 
 //Eigen
 bool NeuralNet::load (const std::string& model_file)
 {
-  return true;
-}
-
-/*
-bool NeuralNet::load (const std::string& model_file)
-{
-  clear ();
+  clear();
   std::ifstream infile (model_file);
   if (infile.fail ()) {
-    printf ("NeuralNet::load () : open file %s error\n", model_file.c_str ());
+    printf ("NeuralNet::load () : open file %s error\n", model_file.c_str ());   
     return false;
   }
-  //std::string comment_line;
-  //std::getline (infile, comment_line);
-  //std::cout << comment_line << std::endl;
   infile >> layer_num;
-  //std::cout << "layer number " << layer_num << std::endl;
-  //std::getline (infile, comment_line);
-  //std::cout << comment_line << std::endl;
   for (int i = 0; i < layer_num; ++i) {
     int n = 0;
     infile >> n;
     layer_size.push_back (n);
-    //std::cout << "layer size " << n << std::endl;
   }
   input_num = layer_size [0];
-  input_num = layer_size [layer_num-1];
-  //std::getline (infile, comment_line);
-  //std::cout << comment_line << std::endl;
+  output_num = layer_size [layer_num-1];
   std::string fun_name;
   for (int i = 0; i < layer_num-1; ++i) {
     infile >> fun_name;
-    //std::cout << fun_name.c_str () << std::endl;
     active_function.push_back (activefunction_maker (fun_name.c_str ()));
   }
-  //std::getline (infile, comment_line);
-  //std::cout << comment_line << std::endl;
   for (int i = 0; i < layer_num - 1; ++i) {
     double n = 0;
     infile >> n;
-    bias.push_back (n);
+    biasv.push_back (n);
   }
-  //std::getline (infile, comment_line);
-  //std::cout << comment_line << std::endl;
-  int weights_num = 0;
-  infile >> weights_num;
-  for (int i = 0; i < weights_num; ++i) {
-    double n = 0;
-    infile >> n;
-    weights.push_back (n);
-    //std::cout << "weight " << weights [i] << std::endl;
+  init_weight();
+  for (long layer = 0; layer < layer_num-1; ++layer) {
+    for (long ii = 0; ii < layer_size[layer+1]; ++ii) {
+      for (long iii = 0; iii < layer_size[layer]; ++iii) {
+        double d = 0.0;
+        infile >> d;
+        weight[layer](ii, iii) = d;
+      }
+    }
+    //std::cout << weight[layer] << std::endl;
   }
-  input_num = layer_size [0];
-  output_num = layer_size [layer_size.size() - 1];
+  init_bias_weight();
+  for (long layer = 1; layer < layer_num; ++layer) {
+    for (long i = 0; i < layer_size[layer]; ++i) {
+      double d = 0.0;
+      infile >> d;
+      bias_weight[layer-1][i] = d;
+    }
+    //std::cout << bias_weight[layer-1] << std::endl;
+  }
   return true;
 }
-*/
+
 
 void NeuralNet::show () const
 {
@@ -460,22 +456,17 @@ long NeuralNet::paramter_number() const
 
 void NeuralNet::test ()
 { 
-  using namespace std;
   //std::vector<std::pair<std::vector<double>, std::vector<double>>> t;
   //std::vector<std::pair<Eigen::VectorXd, Eigen::VectorXd>> t;
   //load_training_set ("test/train.txt", t);
-  /*
   std::chrono::steady_clock::time_point start = std::chrono::steady_clock::now();
   train ("test/train.txt");
   std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
   std::chrono::duration<double> time_span = std::chrono::duration_cast<std::chrono::duration<double>>(end-start);
-  std::cout << "parameters number: " << weights.size() << std::endl;
+  std::cout << "parameters number: " << paramter_number() << std::endl;
   std::cout << "training time: " << time_span.count() << " seconds" << std::endl;
   save ("test/model.txt");
   load ("test/model.txt");
-  */
-  train_m("test/train.txt");
-  return;
 }
 
 

@@ -69,7 +69,7 @@ public:
   bool update_weights (const Eigen::VectorXd& t, const std::vector<Eigen::VectorXd>& layer_out);
 
   //matrix
-  bool train_m (const std::string& train_file);
+  bool train (const std::string& train_file);
 
   bool save (const std::string& model_file);
   bool clear ();
