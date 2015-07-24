@@ -7,7 +7,7 @@
 #include <ctime>
 #include <ratio>
 #include <chrono>
-//#include "Eigen/Dense"
+#include "Eigen/Core"
 
 
 using namespace nnplusplus;
@@ -35,7 +35,6 @@ NeuralNet::NeuralNet (int epoch_num, double learningrate, int ln, ...)
   for (int i = 0; i < layer_num - 1; ++i) {
     active_function.push_back (activefunction_maker (va_arg (args, char*)));
   }
-  Eigen::initParallel();
   va_end (args);
   init_weight ();
   init_bias_weight();
@@ -151,27 +150,32 @@ bool NeuralNet::sum_of_squares_error (const std::vector<Eigen::VectorXd>& layer_
 //Eigen
 bool NeuralNet::propagation (const Eigen::VectorXd& x, std::vector<Eigen::VectorXd>& layer_out)
 {
-  //printf ("NeuralNet::propagation\n");
-  //std::cout << x << std::endl;
+  std::cout << "NeuralNet::propagation " <<  Eigen::nbThreads() << std::endl;
+  std::chrono::steady_clock::time_point start = std::chrono::steady_clock::now();
+
+  /*
+  Eigen::VectorXd m0 = Eigen::VectorXd::Random(2);
+  Eigen::MatrixXd m1 = Eigen::MatrixXd::Random(100000, 2);
+  Eigen::MatrixXd m2 = Eigen::MatrixXd::Random(10000, 100000);
+  Eigen::MatrixXd m3 = Eigen::MatrixXd::Random(1, 10000);
+  Eigen::MatrixXd m10 = m1*m0;
+  Eigen::MatrixXd m21 = m2*m10;
+  Eigen::MatrixXd m32 = m3*m21;
+  */
+
   layer_out.push_back(x);
   for (unsigned long i = 0; i < weight.size(); ++i) {
     //std::cout << weight[i] << std::endl;
     //std::cout << biasv[i] + weight[i] * out[i] << std::endl;
-    //std::cout << "bXb2 \n" << bias_weight[i]*biasv[i] << std::endl;
-    //std::cout << "w*o \n" << weight[i] * layer_out[i] << std::endl;
     Eigen::VectorXd v = (*active_function[i])((bias_weight[i]*biasv[i] + weight[i] * layer_out[i]));
     //Eigen::VectorXd v = (*active_function[i])((biasv[i] + weight[i] * layer_out[i]));
-    //Eigen::VectorXd v = (*active_function[i])((weight[i] * layer_out[i]));
     layer_out.push_back(v);
     //std::cout << v << std::endl;
   }
-  /*
-  for (int i = 0; i < layer_out.size(); ++i) {
-    std::cout << "layer " << i << std::endl;
-    std::cout << layer_out[i] << std::endl;
-  }
-  */
   //printf ("NeuralNet::propagation end\n");
+  std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
+  std::chrono::duration<double> time_span = std::chrono::duration_cast<std::chrono::duration<double>>(end-start);
+  std::cout << "propagation time: " << time_span.count() << " seconds" << std::endl;
   return true;
 }
 
@@ -188,11 +192,6 @@ bool NeuralNet::output (const Eigen::VectorXd& x, Eigen::VectorXd& out)
 bool NeuralNet::compute_delta (const Eigen::VectorXd&t, const std::vector<Eigen::VectorXd>& layer_out, std::vector<Eigen::VectorXd>& layer_delta)
 {
   //printf ("euralNet::compute_delta\n");
-  /*
-  for (int i = 0; i < layer_out.size(); ++i) {
-    std::cout << "layer " << i << std::endl << layer_out[i] << std::endl;
-  }
-  */
   //输出层
   Eigen::VectorXd v = Eigen::VectorXd::Constant(layer_size[layer_num-1], 0.0);
   for (long i = 0; i < layer_size[layer_num-1]; ++i) {
@@ -207,13 +206,6 @@ bool NeuralNet::compute_delta (const Eigen::VectorXd&t, const std::vector<Eigen:
     }
   }
   layer_delta.push_back(v);
-
-  /*
-  for (int i = 0; i < layer_delta.size(); ++i) {
-    std::cout << "delta " << i << std::endl << layer_delta[i] << std::endl;
-  }
-  */
-  //std::cout << "finished 输出层\n";
 
   //隐层
   for (long layer = layer_num-2; layer > 0; --layer) {
@@ -233,13 +225,6 @@ bool NeuralNet::compute_delta (const Eigen::VectorXd&t, const std::vector<Eigen:
     }
     layer_delta.push_back(vh);
   }
-  //std::cout << "finished 隐层\n";
-  
-  /*
-  for (int i = 0; i < layer_delta.size(); ++i){
-    std::cout << "delta " << i << std::endl << layer_delta[i] << std::endl;
-  }
-  */
   return true;
 }
 
@@ -456,6 +441,7 @@ long NeuralNet::paramter_number() const
 
 void NeuralNet::test ()
 { 
+  Eigen::initParallel();
   //std::vector<std::pair<std::vector<double>, std::vector<double>>> t;
   //std::vector<std::pair<Eigen::VectorXd, Eigen::VectorXd>> t;
   //load_training_set ("test/train.txt", t);
@@ -465,8 +451,8 @@ void NeuralNet::test ()
   std::chrono::duration<double> time_span = std::chrono::duration_cast<std::chrono::duration<double>>(end-start);
   std::cout << "parameters number: " << paramter_number() << std::endl;
   std::cout << "training time: " << time_span.count() << " seconds" << std::endl;
-  save ("test/model.txt");
-  load ("test/model.txt");
+  //save ("test/model.txt");
+  //load ("test/model.txt");
 }
 
 
