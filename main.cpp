@@ -10,8 +10,6 @@ using namespace std;
 
 int main (int argc, char** argv) 
 {
-  //omp_set_num_threads(32);
-  //Eigen::setNbThreads(32);
   Eigen::initParallel();
 	std::cout << "hello world\n";
 	
