@@ -10,7 +10,6 @@ using namespace std;
 
 int main (int argc, char** argv) 
 {
-  Eigen::initParallel();
 	std::cout << "hello world\n";
 	
 	//char* pend = NULL;
@@ -24,8 +23,9 @@ int main (int argc, char** argv)
 		learning_rate = strtod (argv[2], NULL);
 	}
 	//NeuralNet n ("test/model.txt");
-	NeuralNet n (epoch, learning_rate, 4, 2, 100000, 10000, 1, "logistic", "logistic", "logistic");
-	//NeuralNet n (epoch, learning_rate, 3, 2, 3, 1, "logistic", "logistic");
+  Eigen::initParallel();
+	//NeuralNet n (epoch, learning_rate, 4, 2, 100000, 10000, 1, "logistic", "logistic", "logistic");
+	NeuralNet n (epoch, learning_rate, 3, 2, 3, 1, "logistic", "logistic");
 	//NeuralNet n (epoch, learning_rate, 3, 2, 2, 1, "tanh", "tanh");
 	n.show ();
 
@@ -43,10 +43,10 @@ int main (int argc, char** argv)
   vx[3] << 0, 0;
   vx[2] << 1, 1;
   for (int i = 0; i < 4; ++i) {
-    std::vector<Eigen::VectorXd> xout;
-    n.propagation (vx[i], xout);
-    std::cout << "input " << xout[0] << std::endl;
-    std::cout << "result " << xout[xout.size()-1] << std::endl;
+    //std::vector<Eigen::VectorXd> xout;
+    n.propagation (vx[i]);
+    std::cout << "input " << n.layer_out[0] << std::endl;
+    std::cout << "result " << n.layer_out[n.layer_out.size()-1] << std::endl;
   }
   
 	return 0;

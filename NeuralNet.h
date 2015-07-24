@@ -33,10 +33,17 @@ public:
   //matrix every layer's bias
   std::vector<double> biasv;
 
+  std::vector<Eigen::VectorXd> layer_out;
+  std::vector<Eigen::VectorXd> layer_delta;
+
   NeuralNet () :  epoch(0), learing_rate(0), layer_num (0) {}
   NeuralNet (const std::string& model_filename);
   NeuralNet (int epoch, double learingrate, int layer_num, ...);
   ~NeuralNet ();
+
+  bool init_layer_out();
+  bool init_layer_delta();
+
 
   //matrix
   bool init_weight ();
@@ -48,7 +55,7 @@ public:
   bool init_biasv ();
 
   //matrix
-  bool propagation (const Eigen::VectorXd& X, std::vector<Eigen::VectorXd>& layer_out);
+  bool propagation (const Eigen::VectorXd& X);
 
   //matrix
   bool output (const Eigen::VectorXd& x, Eigen::VectorXd& out);
