@@ -13,6 +13,7 @@ int main (int argc, char** argv)
 	std::cout << "hello world\n";
 	
 	//char* pend = NULL;
+  Eigen::initParallel();
 	int epoch = 1;
 	double learning_rate = 1;
 	if (2 == argc) {
@@ -23,8 +24,7 @@ int main (int argc, char** argv)
 		learning_rate = strtod (argv[2], NULL);
 	}
 	//NeuralNet n ("test/model.txt");
-  Eigen::initParallel();
-	//NeuralNet n (epoch, learning_rate, 4, 2, 100000, 10000, 1, "logistic", "logistic", "logistic");
+	//NeuralNet n (epoch, learning_rate, 4, 2, 1000, 10000, 1, "logistic", "logistic", "logistic");
 	NeuralNet n (epoch, learning_rate, 3, 2, 3, 1, "logistic", "logistic");
 	//NeuralNet n (epoch, learning_rate, 3, 2, 2, 1, "tanh", "tanh");
 	n.show ();
@@ -37,6 +37,7 @@ int main (int argc, char** argv)
   std::cout << Eigen::nbThreads() << std::endl;
   std::cout << "test time: " << time_span.count() << " seconds" << std::endl;
   
+	std::cout << "threads number " << Eigen::nbThreads() << std::endl;
   std::vector<Eigen::Vector2d> vx(4);
   vx[0] << 1, 0;
   vx[1] << 0, 1;
